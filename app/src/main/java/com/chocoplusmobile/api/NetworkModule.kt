@@ -5,11 +5,14 @@ import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Mirrors the RN app's api/client.ts: an in-memory token/language cache
@@ -30,6 +33,14 @@ object AuthTokenHolder {
 }
 
 class ApiException(message: String, val status: Int? = null) : Exception(message)
+
+/** The backend couldn't be reached or couldn't answer: no connectivity, a
+ * DNS failure, a timeout (no HTTP status at all) or a 5xx. Distinct from a
+ * 4xx, where the server did answer — e.g. 401/403 on a wrong password. */
+fun Throwable.isServerUnavailable(): Boolean {
+    val status = (this as? ApiException ?: return false).status
+    return status == null || status >= 500
+}
 
 private class AuthHeadersInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -82,6 +93,25 @@ object NetworkModule {
         .build()
 
     val api: ApiService = retrofit.create(ApiService::class.java)
+
+    // No interceptors: the probe must never trip the global 401 → logout
+    // hook (it carries no token, and a protected root may well answer 401).
+    private val probeClient: OkHttpClient = okHttpClient.newBuilder()
+        .apply { interceptors().clear() }
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
+        .build()
+
+    /** Cheap "is the backend up?" check: any HTTP answer below 500 — even
+     * a 401/404 — means the server is there; a network error, a timeout or
+     * a 5xx (incl. a reverse proxy's 502/503 for a dead backend) means not. */
+    suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            probeClient.newCall(Request.Builder().url(BuildConfig.API_URL + "/").build()).execute().use { it.code < 500 }
+        } catch (e: java.io.IOException) {
+            false
+        }
+    }
 
     /** Wraps a suspend Retrofit call, turning HttpException/IOException into
      * the same ApiException shape the RN app's axios interceptor produced —

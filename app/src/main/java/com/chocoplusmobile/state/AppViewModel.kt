@@ -13,6 +13,7 @@ import com.chocoplusmobile.api.PlayerTarget
 import com.chocoplusmobile.api.User
 import com.chocoplusmobile.api.WatchProgressPayload
 import com.chocoplusmobile.api.WatchProgressStore
+import com.chocoplusmobile.api.isServerUnavailable
 import com.chocoplusmobile.data.ImageQuality
 import com.chocoplusmobile.data.ImageQualityLevel
 import com.chocoplusmobile.i18n.AppLocale
@@ -21,6 +22,8 @@ import com.chocoplusmobile.storage.TokenStorage
 import com.chocoplusmobile.storage.UserStorage
 import com.chocoplusmobile.download.DownloadManager
 import com.chocoplusmobile.download.canDownload
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +32,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
 
 /**
@@ -60,7 +65,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val isAuthenticated: StateFlow<Boolean> =
         _user.map { it != null }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    /** True when the app started without connectivity and restored the
+    /** True when the app started with the backend unreachable (no
+     * connectivity, timeout, 5xx) and restored the
      * cached user instead of a server-validated one — only ever for
      * ADMIN/FAMILY accounts, so they can reach their offline downloads.
      * Navigation lands on the Downloads screen in that case. */
@@ -85,6 +91,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun exitOfflineSession() {
         _offlineSession.value = false
     }
+
+    /** True while the backend is known to be unreachable (no connectivity,
+     * timeout, 5xx) — Login then offers the downloads, and a background
+     * probe (watchServerRecovery) brings the app back to normal once the
+     * server answers again. */
+    private val _serverUnavailable = MutableStateFlow(false)
+    val serverUnavailable: StateFlow<Boolean> = _serverUnavailable.asStateFlow()
+
+    private val _checkingServer = MutableStateFlow(false)
+    val checkingServer: StateFlow<Boolean> = _checkingServer.asStateFlow()
+
+    private var recoveryJob: Job? = null
+    private val recoveryLock = Mutex()
 
     private val _authError = MutableStateFlow<String?>(null)
     val authError: StateFlow<String?> = _authError.asStateFlow()
@@ -118,51 +137,60 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         // ── Auth boot: read the stored token, validate it against the server. ──
         viewModelScope.launch {
-            val token = tokenStorage.read()
-            if (token == null) {
-                _authChecked.value = true
-                return@launch
-            }
-            AuthTokenHolder.token = token
             try {
-                val me = NetworkModule.safeCall { NetworkModule.api.getCurrentUser() }
-                onUserLoaded(me)
-                // Only the silent restore path gates on the welcome screen —
-                // an interactive login() below never touches this flag.
-                _welcomeGatePending.value = true
-                refreshMyList()
-            } catch (e: Exception) {
-                // Only forget the stored token when the server itself looked
-                // at it and rejected it (401) — that's the one case that
-                // actually says the token is bad. Any other failure (no
-                // connectivity, a DNS hiccup, a timeout, a 5xx) says nothing
-                // about the token at all; it just means this one validation
-                // attempt couldn't complete. Wiping storage on those too used
-                // to mean: open the app once with a flaky connection, and a
-                // perfectly good token was gone for good — forced back to
-                // Login next time even once the network was fine again.
-                // This session still shows Login either way (we genuinely
-                // couldn't confirm who's logged in), but the persisted token
-                // now only gets erased when it's actually confirmed invalid.
-                val status = (e as? ApiException)?.status
-                // No connectivity (no HTTP status at all) with a cached
-                // ADMIN/FAMILY user: open the app anyway, on the offline
-                // Downloads screen — the token is kept, so everything else
-                // simply works again once the network is back.
-                val cached = if (status == null) userStorage.read() else null
-                if (cached != null && cached.role.canDownload()) {
-                    _user.value = cached
-                    _offlineMode.value = true
-                } else {
-                    AuthTokenHolder.token = null
-                    if (status == 401) {
-                        tokenStorage.clear()
-                        userStorage.clear()
-                    }
-                }
+                restoreSession()
             } finally {
                 _authChecked.value = true
             }
+        }
+    }
+
+    /** Validates the stored token against the server — at launch, and again
+     * by recoverServer once an unreachable server answers again. */
+    private suspend fun restoreSession() {
+        val token = tokenStorage.read() ?: return
+        // Coming back from the offline start: already inside the app, so no
+        // welcome gate — the user just gets the full app back.
+        val wasOffline = _offlineMode.value
+        AuthTokenHolder.token = token
+        try {
+            val me = NetworkModule.safeCall { NetworkModule.api.getCurrentUser() }
+            onUserLoaded(me)
+            // Only the silent restore path gates on the welcome screen —
+            // an interactive login() below never touches this flag.
+            if (!wasOffline) _welcomeGatePending.value = true
+            refreshMyList()
+        } catch (e: Exception) {
+            // Only forget the stored token when the server itself looked
+            // at it and rejected it (401) — that's the one case that
+            // actually says the token is bad. Any other failure (no
+            // connectivity, a DNS hiccup, a timeout, a 5xx) says nothing
+            // about the token at all; it just means this one validation
+            // attempt couldn't complete. Wiping storage on those too used
+            // to mean: open the app once with a flaky connection, and a
+            // perfectly good token was gone for good — forced back to
+            // Login next time even once the network was fine again.
+            // This session still shows Login either way (we genuinely
+            // couldn't confirm who's logged in), but the persisted token
+            // now only gets erased when it's actually confirmed invalid.
+            val status = (e as? ApiException)?.status
+            // Server unreachable (no connectivity, timeout, 5xx) with a
+            // cached ADMIN/FAMILY user: open the app anyway, on the
+            // offline Downloads screen — the token is kept, and
+            // watchServerRecovery revalidates it once the server is back.
+            val unavailable = e.isServerUnavailable()
+            val cached = if (unavailable) userStorage.read() else null
+            if (cached != null && cached.role.canDownload()) {
+                _user.value = cached
+                _offlineMode.value = true
+            } else {
+                AuthTokenHolder.token = null
+                if (status == 401) {
+                    tokenStorage.clear()
+                    userStorage.clear()
+                }
+            }
+            if (unavailable) markServerUnavailable()
         }
     }
 
@@ -190,6 +218,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun onUserLoaded(me: User) {
         _user.value = me
         _offlineMode.value = false
+        _serverUnavailable.value = false
         viewModelScope.launch { userStorage.write(me) }
         if (me.role.canDownload()) DownloadManager.resumePending()
     }
@@ -220,11 +249,61 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 onSuccess()
             } catch (e: Exception) {
                 AuthTokenHolder.token = null
-                val message = (e as? ApiException)?.message ?: "Connexion impossible"
+                // Server down/unreachable is not a credentials problem: flag
+                // it (Login shows its own banner + the downloads) instead of
+                // the usual error. A 401/403 still gets the usual message.
+                val unavailable = e.isServerUnavailable()
+                if (unavailable) markServerUnavailable()
+                val message = if (unavailable) "Le serveur est injoignable pour le moment."
+                else (e as? ApiException)?.message ?: "Connexion impossible"
                 _authError.value = message
                 onError(message)
             }
         }
+    }
+
+    /** Probes the backend now (Login on open, its "Réessayer" button):
+     * flags it unavailable, or — if it was and answers again — recovers. */
+    fun checkServer() {
+        if (_checkingServer.value) return
+        _checkingServer.value = true
+        viewModelScope.launch {
+            try {
+                if (!NetworkModule.isServerReachable()) {
+                    markServerUnavailable()
+                } else {
+                    recoverServer()
+                }
+            } finally {
+                _checkingServer.value = false
+            }
+        }
+    }
+
+    private fun markServerUnavailable() {
+        _serverUnavailable.value = true
+        if (recoveryJob?.isActive == true) return
+        recoveryJob = viewModelScope.launch { watchServerRecovery() }
+    }
+
+    /** Re-probes every few seconds until the server answers again, then
+     * returns to normal operation (see recoverServer). */
+    private suspend fun watchServerRecovery() {
+        while (_serverUnavailable.value) {
+            delay(SERVER_RETRY_MS)
+            if (NetworkModule.isServerReachable()) recoverServer()
+        }
+    }
+
+    /** The server answers again: clear the flag and, if we're on the
+     * offline start (cached user) or still logged out with a stored token,
+     * revalidate it — restoreSession re-flags the server if that fails.
+     * Locked so checkServer and the background watch never revalidate
+     * twice at once. */
+    private suspend fun recoverServer() = recoveryLock.withLock {
+        if (!_serverUnavailable.value) return@withLock
+        _serverUnavailable.value = false
+        if (_user.value == null || _offlineMode.value) restoreSession()
     }
 
     fun refreshUser() {
@@ -328,3 +407,5 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 }
+
+private const val SERVER_RETRY_MS = 10_000L

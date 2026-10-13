@@ -20,6 +20,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +54,12 @@ fun LoginScreen() {
     var hidden by remember { mutableStateOf(true) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val serverUnavailable by appViewModel.serverUnavailable.collectAsState()
+    val checkingServer by appViewModel.checkingServer.collectAsState()
+    val hasDownloads = com.chocoplusmobile.navigation.rememberHasOfflineContent()
+
+    // Is the backend even up? Without a stored token the boot never asked.
+    LaunchedEffect(Unit) { appViewModel.checkServer() }
 
     val canSubmit = email.trim().isNotEmpty() && password.isNotEmpty() && !loading
 
@@ -62,7 +70,9 @@ fun LoginScreen() {
         appViewModel.login(
             email.trim(),
             password,
-            onError = { message -> error = message; loading = false },
+            // An unreachable server gets the banner below, not the
+            // credentials error box (that one stays for 401/403 & co).
+            onError = { message -> error = if (appViewModel.serverUnavailable.value) null else message; loading = false },
             onSuccess = { loading = false },
         )
     }
@@ -115,6 +125,15 @@ fun LoginScreen() {
             )
         }
 
+        if (serverUnavailable) {
+            ServerUnavailableBanner(
+                hasDownloads = hasDownloads,
+                checking = checkingServer,
+                onOpenDownloads = appViewModel::enterOfflineSession,
+                onRetry = appViewModel::checkServer,
+            )
+        }
+
         if (error != null) {
             Row(
                 modifier = Modifier
@@ -146,13 +165,57 @@ fun LoginScreen() {
         }
 
         // Offline access to downloaded videos, no login needed — only
-        // offered when something is actually downloaded on this device.
-        if (com.chocoplusmobile.navigation.rememberHasOfflineContent()) {
+        // offered when something is actually downloaded on this device
+        // (and not twice: the server banner already has its own button).
+        if (hasDownloads && !serverUnavailable) {
             com.chocoplusmobile.navigation.OfflineModeButton(
                 onClick = appViewModel::enterOfflineSession,
                 modifier = Modifier.fillMaxWidth().padding(top = 28.dp),
             )
         }
+    }
+}
+
+/** Shown while the backend is unreachable (no network, timeout, 5xx) —
+ * logging in can't work then, but downloaded videos still can. */
+@Composable
+private fun ServerUnavailableBanner(hasDownloads: Boolean, checking: Boolean, onOpenDownloads: () -> Unit, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+            .background(ChocoColors.dangerSoft, RoundedCornerShape(11.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            androidx.compose.material3.Icon(AppIcon.of("wifi_off"), contentDescription = null, tint = ChocoColors.danger, modifier = Modifier.size(17.dp))
+            Text(
+                "Serveur injoignable pour le moment." + if (hasDownloads) " Tes téléchargements restent disponibles hors ligne." else " Réessaie dans quelques instants.",
+                color = androidx.compose.ui.graphics.Color(0xFFFF9C9C),
+                fontFamily = ChocoFonts.bodyMedium,
+                fontSize = 12.5.sp,
+                lineHeight = 18.sp,
+            )
+        }
+        if (hasDownloads) {
+            PrimaryButton(
+                label = "Accéder aux téléchargements",
+                icon = AppIcon.of("download_for_offline"),
+                onClick = onOpenDownloads,
+                height = 44.dp,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        PrimaryButton(
+            label = "Réessayer",
+            icon = AppIcon.of("refresh"),
+            variant = ButtonVariant.OUTLINE,
+            loading = checking,
+            onClick = onRetry,
+            height = 40.dp,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
