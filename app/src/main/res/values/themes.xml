@@ -1,0 +1,17 @@
+<resources>
+    <!-- Plain launch theme — the real look is entirely driven by Compose's
+         own ChocoTheme (see ui/theme/Theme.kt), this only needs to paint the
+         same near-black background so there's no white flash before Compose
+         takes over. Parented on Theme.AppCompat (not a plain platform theme)
+         because MediaRouteChooserDialog — the Cast device picker shown from
+         PlayerScreen — extends AppCompatDialog, which throws
+         "You need to use a Theme.AppCompat theme (or descendant)" as soon
+         as it's constructed against a plain platform theme like the old
+         android:Theme.Material.NoActionBar — why tapping the cast button
+         never opened the picker. -->
+    <style name="Theme.ChocoPlus" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+    </style>
+</resources>

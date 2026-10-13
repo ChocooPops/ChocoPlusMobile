@@ -1,0 +1,42 @@
+# ── Secrets ─────────────────────────────────────────────────────────────
+# Backend URL + secret API header, read by app/build.gradle.kts.
+.env
+.env.*
+!.env.example
+# Machine-specific (SDK path) and possibly signing credentials.
+local.properties
+# Release signing keys.
+*.jks
+*.keystore
+keystore.properties
+
+# ── Gradle / Kotlin build output ────────────────────────────────────────
+.gradle/
+.kotlin/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ── Android build artifacts ─────────────────────────────────────────────
+*.apk
+*.aab
+*.ap_
+*.dex
+output-metadata.json
+app/release/
+app/debug/
+
+# ── IDE (Android Studio / IntelliJ / VS Code) ───────────────────────────
+.idea/
+*.iml
+.vscode/
+.navigation/
+
+# ── Logs & OS files ─────────────────────────────────────────────────────
+*.log
+*.hprof
+.DS_Store
+Thumbs.db
+desktop.ini
