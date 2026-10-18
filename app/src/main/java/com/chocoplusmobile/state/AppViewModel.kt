@@ -398,6 +398,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Not driven by any Settings UI — PlayerScreen calls this whenever the
      * viewer manually changes an audio or subtitle track, inferring VF/VO
      * from the resulting combination so the next video starts the same way. */
+    /** seriesId → id of the season last picked in SerieDetailScreen —
+     * takes priority over the server's lastSeasonWatched. Deliberately in
+     * memory only: once the app is closed, lastSeasonWatched is back in
+     * charge. */
+    private val lastSeasonBySeries = mutableMapOf<Int, Int>()
+
+    fun lastSeason(seriesId: Int): Int? = lastSeasonBySeries[seriesId]
+
+    fun rememberLastSeason(seriesId: Int, seasonId: Int) {
+        lastSeasonBySeries[seriesId] = seasonId
+    }
+
     fun setAudioSubtitlePreference(pref: AudioSubtitlePreference) = updatePrefs { it.copy(settings = it.settings.copy(audioSubtitlePreference = pref)) }
 
     companion object {

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -120,7 +121,24 @@ fun SerieDetailScreen() {
 
     // media.seasons already carries the full list (id, name, poster) when
     // the source endpoint populates it — the picker renders from that.
-    var season by remember { mutableIntStateOf(1) } // the season NUMBER shown/selected
+    // Opens on the season last picked here while the app is running, else the
+    // server's lastSeasonWatched (a season id), else the first season —
+    // each only if it still matches one of this series' seasons.
+    fun seasonNumberOf(seasonId: Int?): Int? = seasonId?.let { id -> ui.seasons?.find { it.id == id }?.seasonNumber }
+    var season by remember(media.id) {
+        mutableIntStateOf(
+            seasonNumberOf(appViewModel.lastSeason(media.id))
+                ?: seasonNumberOf(media.lastSeasonWatched)
+                ?: ui.seasons?.firstOrNull()?.seasonNumber
+                ?: 1
+        )
+    } // the season NUMBER shown/selected
+
+    /** A season picked by hand — remembered for next time. */
+    fun selectSeason(number: Int) {
+        season = number
+        ui.seasons?.find { it.seasonNumber == number }?.let { appViewModel.rememberLastSeason(media.id, it.id) }
+    }
     var episodes by remember { mutableStateOf(listOf<Episode>()) }
     var episodesLoading by remember { mutableStateOf(true) }
     var episodesError by remember { mutableStateOf<String?>(null) }
@@ -364,11 +382,16 @@ fun SerieDetailScreen() {
                     if (tab == SerieTab.EPISODES) {
                         val seasons = ui.seasons ?: emptyList()
                         if (seasons.isNotEmpty()) {
-                            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 16.dp, bottom = 15.dp)) {
+                            // Start scrolled to the selected season, which may
+                            // be far down the row (see `season` above).
+                            val seasonRowState = rememberLazyListState(
+                                initialFirstVisibleItemIndex = seasons.indexOfFirst { it.seasonNumber == season }.coerceAtLeast(0),
+                            )
+                            LazyRow(state = seasonRowState, contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 16.dp, bottom = 15.dp)) {
                                 items(seasons.size) { i ->
                                     val s = seasons[i]
                                     val active = s.seasonNumber == season
-                                    Column(modifier = Modifier.width(88.dp).clickable { season = s.seasonNumber }, horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Column(modifier = Modifier.width(88.dp).clickable { selectSeason(s.seasonNumber) }, horizontalAlignment = Alignment.CenterHorizontally) {
                                         Poster(
                                             title = s.name,
                                             uri = s.posterUrl,
@@ -383,9 +406,9 @@ fun SerieDetailScreen() {
                             }
                         } else {
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                                IconCircleButton(icon = AppIcon.of("chevron_left"), size = 34.dp, iconSize = 20.dp, background = Color(0x12FFFFFF), onClick = { season = (season - 1).coerceAtLeast(1) })
+                                IconCircleButton(icon = AppIcon.of("chevron_left"), size = 34.dp, iconSize = 20.dp, background = Color(0x12FFFFFF), onClick = { selectSeason((season - 1).coerceAtLeast(1)) })
                                 Text("Saison $season", color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 15.sp, modifier = Modifier.width(90.dp).padding(horizontal = 16.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                                IconCircleButton(icon = AppIcon.of("chevron_right"), size = 34.dp, iconSize = 20.dp, background = Color(0x12FFFFFF), onClick = { season += 1 })
+                                IconCircleButton(icon = AppIcon.of("chevron_right"), size = 34.dp, iconSize = 20.dp, background = Color(0x12FFFFFF), onClick = { selectSeason(season + 1) })
                             }
                         }
                     }
