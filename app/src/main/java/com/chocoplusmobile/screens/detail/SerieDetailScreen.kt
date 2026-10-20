@@ -84,6 +84,10 @@ import com.chocoplusmobile.ui.icons.MyListCheckVector
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
+import com.chocoplusmobile.i18n.tCount
 
 private enum class SerieTab { EPISODES, SIMILAR }
 
@@ -169,7 +173,7 @@ fun SerieDetailScreen() {
         try {
             episodes = NetworkModule.safeCall { NetworkModule.api.getEpisodes(media.id, seasonIdForApi) }
         } catch (e: Exception) {
-            episodesError = e.message ?: "Erreur réseau"
+            episodesError = e.message ?: Tr.NETWORK_ERROR.text()
         } finally {
             episodesLoading = false
         }
@@ -201,7 +205,7 @@ fun SerieDetailScreen() {
                 metaRecord = NetworkModule.safeCall { NetworkModule.api.getSeriesById(media.id) }
                 metaFor = media.id
             } catch (e: Exception) {
-                metaError = e.message ?: "Erreur réseau"
+                metaError = e.message ?: Tr.NETWORK_ERROR.text()
             } finally {
                 metaLoading = false
             }
@@ -306,7 +310,7 @@ fun SerieDetailScreen() {
 
                         Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                             PrimaryButton(
-                                label = if (nextUp != null) "S$season · E${nextUp.episodeNumber}" else "Lecture",
+                                label = if (nextUp != null) t(Tr.SEASON_EPISODE_SHORT, season, nextUp.episodeNumber) else t(Tr.PLAYBACK),
                                 icon = AppIcon.of("play_arrow"),
                                 onClick = { nextUp?.let(::playEpisode) },
                                 enabled = nextUp != null,
@@ -328,10 +332,10 @@ fun SerieDetailScreen() {
 
                         Column(modifier = Modifier.padding(top = 14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                             if (ui.genres.isNotEmpty()) {
-                                DetailMetaChipRow("Genres", ui.genres, onClick = { tag -> tag.id?.let { openCatalogueFor(CatalogueEntryFilter.Category(it)) } })
+                                DetailMetaChipRow(t(Tr.DETAIL_GENRES), ui.genres, onClick = { tag -> tag.id?.let { openCatalogueFor(CatalogueEntryFilter.Category(it)) } })
                             }
                             if (ui.keywords.isNotEmpty()) {
-                                DetailMetaChipRow("Mots-clés", ui.keywords, dim = true, onClick = { tag -> openCatalogueFor(CatalogueEntryFilter.Keyword(tag.name)) })
+                                DetailMetaChipRow(t(Tr.DETAIL_KEYWORDS), ui.keywords, dim = true, onClick = { tag -> openCatalogueFor(CatalogueEntryFilter.Keyword(tag.name)) })
                             }
                         }
                     }
@@ -341,7 +345,7 @@ fun SerieDetailScreen() {
                     } else {
                         if (ui.cast.isNotEmpty()) {
                             Column(modifier = Modifier.padding(top = 24.dp)) {
-                                Text("Distribution", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
+                                Text(t(Tr.DETAIL_CAST), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
                                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     items(ui.cast.size) { i ->
                                         val p = ui.cast[i]
@@ -357,7 +361,7 @@ fun SerieDetailScreen() {
                         }
                         if (ui.crew.isNotEmpty()) {
                             Column(modifier = Modifier.padding(top = 24.dp)) {
-                                Text("Équipe technique", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
+                                Text(t(Tr.DETAIL_CREW), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
                                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     items(ui.crew.size) { i ->
                                         val p = ui.crew[i]
@@ -374,8 +378,8 @@ fun SerieDetailScreen() {
                     }
 
                     Row(modifier = Modifier.padding(top = 22.dp).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-                        DetailTabButton("Épisodes", tab == SerieTab.EPISODES) { tab = SerieTab.EPISODES }
-                        DetailTabButton("Titres similaires", tab == SerieTab.SIMILAR) { tab = SerieTab.SIMILAR }
+                        DetailTabButton(t(Tr.EPISODES), tab == SerieTab.EPISODES) { tab = SerieTab.EPISODES }
+                        DetailTabButton(t(Tr.DETAIL_SIMILAR), tab == SerieTab.SIMILAR) { tab = SerieTab.SIMILAR }
                     }
                     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ChocoColors.divider))
 
@@ -407,7 +411,7 @@ fun SerieDetailScreen() {
                         } else {
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                                 IconCircleButton(icon = AppIcon.of("chevron_left"), size = 34.dp, iconSize = 20.dp, background = Color(0x12FFFFFF), onClick = { selectSeason((season - 1).coerceAtLeast(1)) })
-                                Text("Saison $season", color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 15.sp, modifier = Modifier.width(90.dp).padding(horizontal = 16.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                Text(t(Tr.SEASON_N, season), color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 15.sp, modifier = Modifier.width(90.dp).padding(horizontal = 16.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                 IconCircleButton(icon = AppIcon.of("chevron_right"), size = 34.dp, iconSize = 20.dp, background = Color(0x12FFFFFF), onClick = { selectSeason(season + 1) })
                             }
                         }
@@ -421,7 +425,7 @@ fun SerieDetailScreen() {
                 } else if (episodes.isEmpty()) {
                     item {
                         Text(
-                            episodesError ?: "Aucun épisode pour cette saison.",
+                            episodesError ?: t(Tr.DETAIL_NO_EPISODES),
                             color = ChocoColors.textMuted,
                             fontFamily = ChocoFonts.bodyRegular,
                             fontSize = 13.sp,
@@ -453,7 +457,7 @@ fun SerieDetailScreen() {
                     item { CircularProgressIndicator(color = ChocoColors.accent, modifier = Modifier.padding(top = 30.dp).padding(horizontal = 16.dp)) }
                 } else if (similar.isEmpty()) {
                     item {
-                        Text("Aucun titre similaire pour le moment.", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 30.dp))
+                        Text(t(Tr.DETAIL_NO_SIMILAR), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 30.dp))
                     }
                 } else {
                     item {
@@ -542,10 +546,10 @@ private fun SeasonDownloadRow(episodes: List<Episode>, downloads: List<DownloadE
     val remaining = episodes.size - done - active.size
 
     val (icon, label) = when {
-        active.isNotEmpty() -> "close" to "Téléchargement de la saison… $done/${episodes.size}"
-        allDone -> "download_done" to "Saison téléchargée"
-        done > 0 -> "download" to "Télécharger les $remaining épisodes restants"
-        else -> "download" to "Télécharger la saison (${episodes.size} épisode${if (episodes.size > 1) "s" else ""})"
+        active.isNotEmpty() -> "close" to t(Tr.SEASON_DOWNLOADING, done, episodes.size)
+        allDone -> "download_done" to t(Tr.SEASON_DOWNLOADED)
+        done > 0 -> "download" to tCount(Tr.SEASON_DOWNLOAD_REMAINING_ONE, Tr.SEASON_DOWNLOAD_REMAINING_MANY, remaining)
+        else -> "download" to tCount(Tr.SEASON_DOWNLOAD_ONE, Tr.SEASON_DOWNLOAD_MANY, episodes.size)
     }
 
     Column(
@@ -583,14 +587,14 @@ private fun SeasonDownloadRow(episodes: List<Episode>, downloads: List<DownloadE
             containerColor = ChocoColors.surfaceAlt,
             title = {
                 Text(
-                    if (cancelling) "Annuler les téléchargements ?" else "Supprimer la saison ?",
+                    if (cancelling) t(Tr.SEASON_CANCEL_CONFIRM) else t(Tr.SEASON_DELETE_CONFIRM),
                     color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 17.sp,
                 )
             },
             text = {
                 Text(
-                    if (cancelling) "Les ${active.size} épisode${if (active.size > 1) "s" else ""} en cours ou en attente seront annulés. Les épisodes déjà téléchargés sont conservés."
-                    else "Les $done épisodes téléchargés de cette saison ne seront plus disponibles hors ligne.",
+                    if (cancelling) tCount(Tr.SEASON_CANCEL_DESC_ONE, Tr.SEASON_CANCEL_DESC_MANY, active.size)
+                    else tCount(Tr.SEASON_DELETE_DESC_ONE, Tr.SEASON_DELETE_DESC_MANY, done),
                     color = Color(0xB3FFFFFF), fontFamily = ChocoFonts.bodyRegular, fontSize = 13.sp,
                 )
             },
@@ -599,12 +603,12 @@ private fun SeasonDownloadRow(episodes: List<Episode>, downloads: List<DownloadE
                     (if (cancelling) active else downloads).forEach { DownloadManager.remove(it.key) }
                     confirm = false
                 }) {
-                    Text(if (cancelling) "Annuler les téléchargements" else "Supprimer", color = Color(0xFFFF6B6B), fontFamily = ChocoFonts.bodyBold)
+                    Text(if (cancelling) t(Tr.SEASON_CANCEL_DOWNLOADS) else t(Tr.DELETE), color = Color(0xFFFF6B6B), fontFamily = ChocoFonts.bodyBold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { confirm = false }) {
-                    Text("Fermer", color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold)
+                    Text(t(Tr.CLOSE), color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold)
                 }
             },
         )

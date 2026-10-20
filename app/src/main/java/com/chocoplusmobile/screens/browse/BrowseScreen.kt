@@ -91,6 +91,8 @@ import com.chocoplusmobile.video.VlcPlayer
 import com.chocoplusmobile.video.rememberVlcPlayer
 import kotlinx.coroutines.launch
 import org.videolan.libvlc.MediaPlayer
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 private data class FilteredRow(val id: Int, val title: String, val isSpecial: Boolean, val items: List<Media>, val createFrom: MediaType?)
 
@@ -269,7 +271,7 @@ fun BrowseScreen(mediaType: MediaType) {
                                 isLandscape = isLandscape,
                             )
                             if (filteredRows.isEmpty()) {
-                                ErrorState(message = "Aucun contenu à afficher pour le moment.", onRetry = ::refresh)
+                                ErrorState(message = t(Tr.HOME_NO_CONTENT), onRetry = ::refresh)
                             }
                         }
                     }

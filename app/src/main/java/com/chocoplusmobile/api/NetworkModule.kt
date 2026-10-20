@@ -13,6 +13,8 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.text
 
 /**
  * Mirrors the RN app's api/client.ts: an in-memory token/language cache
@@ -125,9 +127,9 @@ object NetworkModule {
         } catch (e: retrofit2.HttpException) {
             val raw = e.response()?.errorBody()?.string()
             val message = raw?.let { runCatching { json.parseToJsonElement(it).toString() }.getOrNull() }
-            throw ApiException(message ?: e.message() ?: "Erreur réseau", e.code())
+            throw ApiException(message ?: e.message() ?: Tr.NETWORK_ERROR.text(), e.code())
         } catch (e: java.io.IOException) {
-            throw ApiException(e.message ?: "Erreur réseau")
+            throw ApiException(e.message ?: Tr.NETWORK_ERROR.text())
         }
     }
 }

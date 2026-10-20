@@ -36,6 +36,9 @@ import com.chocoplusmobile.ui.theme.ChocoColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
 
 /**
  * Mirrors the RN app's screens/Profile/DocumentationScreen.tsx — but the
@@ -81,7 +84,7 @@ fun DocumentationScreen() {
                 }
             }
         } catch (e: Exception) {
-            error = e.message ?: "Impossible de charger la documentation."
+            error = e.message ?: Tr.DOC_LOAD_FAILED.text()
         } finally {
             loading = false
         }
@@ -89,7 +92,7 @@ fun DocumentationScreen() {
 
     Column(modifier = Modifier.fillMaxSize().background(ChocoColors.bg).padding(top = 50.dp)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 16.dp)) {
-            ScreenHeaderBack(title = "Documentation", onBack = { navController.popBackStack() })
+            ScreenHeaderBack(title = t(Tr.PROFILE_DOCUMENTATION), onBack = { navController.popBackStack() })
         }
         when {
             loading -> LoadingState(modifier = Modifier.padding(top = 40.dp))
@@ -103,7 +106,7 @@ fun DocumentationScreen() {
                     items(pages.size) { i ->
                         Image(
                             bitmap = pages[i].asImageBitmap(),
-                            contentDescription = "Page ${i + 1}",
+                            contentDescription = t(Tr.DOC_PAGE_N, i + 1),
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.FillWidth,
                         )

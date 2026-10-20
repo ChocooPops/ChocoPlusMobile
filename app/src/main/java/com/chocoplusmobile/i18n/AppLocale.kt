@@ -15,4 +15,12 @@ import com.chocoplusmobile.state.AppLanguage
  */
 object AppLocale {
     var current: AppLanguage = AppLanguage.FR
+
+    /** For date formatting (month names) in the app's language. */
+    val javaLocale: java.util.Locale
+        get() = when (current) {
+            AppLanguage.FR -> java.util.Locale.FRENCH
+            AppLanguage.EN -> java.util.Locale.ENGLISH
+            AppLanguage.JA -> java.util.Locale.JAPANESE
+        }
 }

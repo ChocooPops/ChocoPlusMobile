@@ -62,6 +62,10 @@ import com.chocoplusmobile.ui.rememberApiData
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.delay
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
+import com.chocoplusmobile.i18n.tCount
 
 /** Mirrors the RN app's screens/Search/SearchScreen.tsx — its own
  * independent tab, reached only via the TopBar magnifying-glass icon (see
@@ -111,7 +115,7 @@ fun SearchScreen(initialQuery: String = "") {
             results = list
             recents = (listOf(trimmed) + recents.filter { it.lowercase() != trimmed.lowercase() }).take(8)
         } catch (e: Exception) {
-            searchError = e.message ?: "Erreur réseau"
+            searchError = e.message ?: Tr.NETWORK_ERROR.text()
         } finally {
             searching = false
         }
@@ -155,7 +159,7 @@ fun SearchScreen(initialQuery: String = "") {
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(ChocoColors.accent),
                     modifier = Modifier.weight(1f).focusRequester(searchFocusRequester),
                     decorationBox = { inner ->
-                        if (query.isEmpty()) Text("Un titre, original ou traduit…", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 15.sp)
+                        if (query.isEmpty()) Text(t(Tr.SEARCH_PLACEHOLDER), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 15.sp)
                         inner()
                     },
                 )
@@ -171,7 +175,7 @@ fun SearchScreen(initialQuery: String = "") {
                         searchError != null -> ErrorState(message = searchError!!, onRetry = { retryTick++ })
                         else -> {
                             Text(
-                                "${results.size} RÉSULTAT${if (results.size > 1) "S" else ""}",
+                                tCount(Tr.SEARCH_RESULTS_ONE, Tr.SEARCH_RESULTS_MANY, results.size).uppercase(),
                                 color = ChocoColors.textFaint,
                                 fontFamily = ChocoFonts.bodyBold,
                                 fontSize = 11.sp,
@@ -179,7 +183,7 @@ fun SearchScreen(initialQuery: String = "") {
                                 modifier = Modifier.padding(bottom = 12.dp),
                             )
                             if (results.isEmpty()) {
-                                Text("Aucun résultat pour « $query ».", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 13.sp, modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                Text(t(Tr.SEARCH_NO_RESULTS, query), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 13.sp, modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                             } else if (format == PosterFormat.V && cols == 1) {
                                 Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
                                     results.forEach { m -> SearchCompactRow(m, onClick = { openMedia(m) }) }
@@ -196,7 +200,7 @@ fun SearchScreen(initialQuery: String = "") {
                 Column {
                     if (recents.isNotEmpty()) {
                         Column(modifier = Modifier.padding(horizontal = 16.dp).padding(top = 20.dp)) {
-                            Text("RECHERCHES RÉCENTES", color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp, letterSpacing = 1.1.sp, modifier = Modifier.padding(bottom = 10.dp))
+                            Text(t(Tr.SEARCH_RECENT).uppercase(), color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp, letterSpacing = 1.1.sp, modifier = Modifier.padding(bottom = 10.dp))
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                                 recents.forEach { r ->
                                     Row(
@@ -215,7 +219,7 @@ fun SearchScreen(initialQuery: String = "") {
                         }
                     }
                     Column(modifier = Modifier.padding(horizontal = 16.dp).padding(top = 21.dp)) {
-                        Text("Explorer par licence", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 17.sp)
+                        Text(t(Tr.SEARCH_BY_LICENSE), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 17.sp)
                         when {
                             licensesState.loading -> LoadingState(compact = true)
                             licensesState.error != null -> ErrorState(message = licensesState.error!!, onRetry = reloadLicenses)

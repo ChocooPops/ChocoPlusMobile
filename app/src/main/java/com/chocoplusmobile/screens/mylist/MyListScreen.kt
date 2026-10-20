@@ -53,6 +53,10 @@ import com.chocoplusmobile.ui.icons.AppIcon
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
+import com.chocoplusmobile.i18n.tCount
 
 /**
  * Deliberately mirrors Recherche's results list — same format/alignment
@@ -83,7 +87,7 @@ fun MyListScreen() {
             try {
                 items = NetworkModule.safeCall { NetworkModule.api.getMyList() }
             } catch (e: Exception) {
-                error = e.message ?: "Erreur réseau"
+                error = e.message ?: Tr.NETWORK_ERROR.text()
             } finally {
                 loading = false
             }
@@ -109,8 +113,8 @@ fun MyListScreen() {
             avatarUri = user?.profilPhoto,
         )
         Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 16.dp, bottom = com.chocoplusmobile.ui.components.TAB_BAR_CLEARANCE)) {
-            Text("Ma liste", color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 24.sp, letterSpacing = (-0.6).sp)
-            Text("${items.size} titre${if (items.size > 1) "s" else ""} · visible de toi seul", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
+            Text(t(Tr.PAGE_MYLIST), color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 24.sp, letterSpacing = (-0.6).sp)
+            Text(tCount(Tr.MYLIST_SUBTITLE_ONE, Tr.MYLIST_SUBTITLE_MANY, items.size), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
 
             when {
                 loading -> LoadingState()
@@ -120,9 +124,9 @@ fun MyListScreen() {
                     if (items.isEmpty()) {
                         EmptyState(
                             icon = AppIcon.of("bookmark_add"),
-                            title = "Rien à grignoter ici",
-                            description = "Ajoute un film ou une série depuis sa fiche pour la garder sous la main.",
-                            ctaLabel = "Parcourir le catalogue",
+                            title = t(Tr.MYLIST_EMPTY_TITLE),
+                            description = t(Tr.MYLIST_EMPTY_DESC),
+                            ctaLabel = t(Tr.DOWNLOADS_BROWSE_CATALOGUE),
                             onPressCta = { navController.navigate("catalogue") },
                         )
                     }
@@ -148,7 +152,7 @@ fun MediaCollection(items: List<Media>, format: PosterFormat, cols: Int, mediaLa
                 val ui = Adapters.mapMediaToUi(m)
                 val tileModifier = Modifier.fillMaxWidth(widthPct).clickable { onOpen(m) }
                 if (format == PosterFormat.V) {
-                    Poster(title = ui.title, uri = ui.posterUrl, ratio = PosterRatio.R2_3, radius = 8.dp, titleSize = 10.5.sp, badge = if (ui.type == com.chocoplusmobile.data.UiMediaType.SERIE) "SÉRIE" else null, modifier = tileModifier)
+                    Poster(title = ui.title, uri = ui.posterUrl, ratio = PosterRatio.R2_3, radius = 8.dp, titleSize = 10.5.sp, badge = if (ui.type == com.chocoplusmobile.data.UiMediaType.SERIE) t(Tr.BADGE_SERIES) else null, modifier = tileModifier)
                 } else {
                     Poster(title = ui.title, uri = ui.backdropUrl, ratio = PosterRatio.R16_9, radius = 10.dp, titleSize = if (cols == 1) 15.sp else 12.sp, modifier = tileModifier) {
                         Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.BottomStart) {

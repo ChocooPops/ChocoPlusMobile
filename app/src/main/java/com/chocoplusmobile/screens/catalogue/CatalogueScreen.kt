@@ -75,8 +75,14 @@ import com.chocoplusmobile.ui.icons.AppIcon
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
+import com.chocoplusmobile.i18n.tCount
 
-private val MEDIA_OPTIONS = listOf("Tout", "Films", "Séries")
+/** The media-type filter — kept as a value (not its label) so the
+ * filtering logic doesn't depend on the display language. */
+private enum class MediaFilter(val label: Tr) { ALL(Tr.CATALOGUE_MEDIA_ALL), MOVIES(Tr.PAGE_FILMS), SERIES(Tr.PAGE_SERIES) }
 // No "Toutes" entry — with multi-select, an empty selection already means
 // every decade.
 private val DEC_OPTIONS = listOf("1920", "1940", "1960", "1980", "1990", "2000", "2010", "2020")
@@ -86,13 +92,13 @@ private val DEC_OPTIONS = listOf("1920", "1940", "1960", "1980", "1990", "2000",
  * active. Either way it becomes the literal `orderDirection` query string
  * the backend expects ("true"/"false" — anything else is treated as true
  * server-side). */
-private data class SortOption(val label: String, val value: SortCatalog, val ascendingDefault: Boolean)
+private data class SortOption(val label: Tr, val value: SortCatalog, val ascendingDefault: Boolean)
 private val SORTS = listOf(
-    SortOption("Ajout", SortCatalog.ADDED_DATE, false),
-    SortOption("Nom", SortCatalog.TITLE, true),
-    SortOption("Sortie", SortCatalog.RELEASE_DATE, false),
-    SortOption("Aléatoire", SortCatalog.SHUFFLE, true),
-    SortOption("Déjà vus", SortCatalog.ALREADY_WATCHED, false),
+    SortOption(Tr.CATALOGUE_SORT_ADDED, SortCatalog.ADDED_DATE, false),
+    SortOption(Tr.CATALOGUE_SORT_TITLE, SortCatalog.TITLE, true),
+    SortOption(Tr.CATALOGUE_SORT_RELEASE, SortCatalog.RELEASE_DATE, false),
+    SortOption(Tr.CATALOGUE_SORT_SHUFFLE, SortCatalog.SHUFFLE, true),
+    SortOption(Tr.CATALOGUE_SORT_WATCHED, SortCatalog.ALREADY_WATCHED, false),
 )
 private const val PAGE_SIZE = 24
 
@@ -102,13 +108,13 @@ private const val PAGE_SIZE = 24
  * credit/job-filters (`filterType = null`), since the backend's Job enum
  * isn't mirrored client-side (see CatalogFilter's own doc in
  * ApiService.kt). */
-private data class AdvancedFilterTypeOption(val label: String, val filterType: FilterType?)
+private data class AdvancedFilterTypeOption(val label: Tr, val filterType: FilterType?)
 private val ADVANCED_FILTER_TYPES = listOf(
-    AdvancedFilterTypeOption("Métier (job)", null),
-    AdvancedFilterTypeOption("Mot-clé", FilterType.KEY_WORD),
-    AdvancedFilterTypeOption("Année", FilterType.YEAR),
-    AdvancedFilterTypeOption("Sélection", FilterType.SELECTION),
-    AdvancedFilterTypeOption("Licence", FilterType.LICENSE),
+    AdvancedFilterTypeOption(Tr.CATALOGUE_FILTER_JOB, null),
+    AdvancedFilterTypeOption(Tr.CATALOGUE_FILTER_KEYWORD, FilterType.KEY_WORD),
+    AdvancedFilterTypeOption(Tr.CATALOGUE_FILTER_YEAR, FilterType.YEAR),
+    AdvancedFilterTypeOption(Tr.CATALOGUE_FILTER_SELECTION, FilterType.SELECTION),
+    AdvancedFilterTypeOption(Tr.CATALOGUE_FILTER_LICENSE, FilterType.LICENSE),
 )
 /** `displayValue` is what shows after `displayLabel` in the applied-filters
  * chip (e.g. "Année : 1994") — defaults to `value` for the advanced-filter
@@ -132,10 +138,10 @@ fun CatalogueScreen() {
 
     var categories by remember { mutableStateOf(listOf<CategorySimple>()) }
     var jobOptions by remember { mutableStateOf(listOf<String>()) }
-    var media by remember { mutableStateOf("Tout") }
+    var media by remember { mutableStateOf(MediaFilter.ALL) }
     var selectedCatIds by remember { mutableStateOf(setOf<Int>()) }
     var selectedDecs by remember { mutableStateOf(setOf<String>()) }
-    var sortLabel by remember { mutableStateOf("Ajout") }
+    var sortValue by remember { mutableStateOf(SortCatalog.ADDED_DATE) }
     var sortAscending by remember { mutableStateOf(false) }
     var customFilters by remember { mutableStateOf(listOf<CustomFilterEntry>()) }
     var advancedTypeIdx by remember { mutableStateOf(0) }
@@ -153,16 +159,13 @@ fun CatalogueScreen() {
     // corresponding filter here — read once and cleared immediately so
     // navigating back into Catalogue "fresh" later doesn't reapply it.
     remember {
-        // Selects a SORTS entry by its SortCatalog value rather than
-        // hardcoding a label string here, so this stays correct if a label
-        // above ever changes.
         fun applySort(value: SortCatalog) {
-            SORTS.find { it.value == value }?.let { sortLabel = it.label; sortAscending = it.ascendingDefault }
+            SORTS.find { it.value == value }?.let { sortValue = it.value; sortAscending = it.ascendingDefault }
         }
         when (val entry = NavCache.pendingCatalogueFilter) {
             is CatalogueEntryFilter.Category -> selectedCatIds = setOf(entry.id)
-            is CatalogueEntryFilter.Keyword -> customFilters = listOf(CustomFilterEntry(FilterType.KEY_WORD.wireValue, "Mot-clé", entry.name))
-            is CatalogueEntryFilter.Staff -> customFilters = listOf(CustomFilterEntry(entry.job, "${entry.jobLabel} : ${entry.name}", entry.creditId.toString(), displayValue = null))
+            is CatalogueEntryFilter.Keyword -> customFilters = listOf(CustomFilterEntry(FilterType.KEY_WORD.wireValue, Tr.CATALOGUE_FILTER_KEYWORD.text(), entry.name))
+            is CatalogueEntryFilter.Staff -> customFilters = listOf(CustomFilterEntry(entry.job, Tr.LABEL_VALUE.text(entry.jobLabel, entry.name), entry.creditId.toString(), displayValue = null))
             is CatalogueEntryFilter.SelectionSeeAll -> {
                 customFilters = listOf(CustomFilterEntry(FilterType.SELECTION.wireValue, entry.name, entry.selectionId.toString(), displayValue = null))
                 applySort(SortCatalog.SHUFFLE)
@@ -196,7 +199,7 @@ fun CatalogueScreen() {
         } catch (e: Exception) { /* ignore — the job filter picker just stays empty */ }
     }
 
-    val sort = SORTS.find { it.label == sortLabel } ?: SORTS[0]
+    val sort = SORTS.find { it.value == sortValue } ?: SORTS[0]
 
     // Blocks with no explicit `logic` default to AND server-side (see
     // filters.interface.ts / getMediaByCatalogFilters) — exactly "media type
@@ -219,8 +222,8 @@ fun CatalogueScreen() {
                 value = values.map { CatalogFilterValue(it) },
             )
         }
-        if (media == "Films") add(FilterType.MEDIA.wireValue, listOf(MediaType.MOVIE.name))
-        if (media == "Séries") add(FilterType.MEDIA.wireValue, listOf(MediaType.SERIES.name))
+        if (media == MediaFilter.MOVIES) add(FilterType.MEDIA.wireValue, listOf(MediaType.MOVIE.name))
+        if (media == MediaFilter.SERIES) add(FilterType.MEDIA.wireValue, listOf(MediaType.SERIES.name))
         // Category id (numeric) rather than translationKey — an exact
         // `categoryId = ?` match server-side instead of a LIKE, and lets
         // several selected categories share one filter block cleanly.
@@ -249,7 +252,7 @@ fun CatalogueScreen() {
                 items = if (append) items + res.medias else res.medias
                 total = res.total
             } catch (e: Exception) {
-                error = e.message ?: "Erreur réseau"
+                error = e.message ?: Tr.NETWORK_ERROR.text()
             } finally {
                 loading = false
                 loadingMore = false
@@ -257,7 +260,7 @@ fun CatalogueScreen() {
         }
     }
 
-    LaunchedEffect(media, selectedCatIds, selectedDecs, customFilters, sortLabel, sortAscending) { load(0, false) }
+    LaunchedEffect(media, selectedCatIds, selectedDecs, customFilters, sortValue, sortAscending) { load(0, false) }
 
     fun openMedia(m: Media) {
         NavCache.pendingMedia = m
@@ -265,14 +268,14 @@ fun CatalogueScreen() {
     }
 
     val chips = buildList {
-        if (media != "Tout") add(Triple("media", "Média : $media") { media = "Tout" })
+        if (media != MediaFilter.ALL) add(Triple("media", t(Tr.LABEL_VALUE, t(Tr.CATALOGUE_CHIP_MEDIA), t(media.label))) { media = MediaFilter.ALL })
         selectedCatIds.forEach { id ->
             val label = categories.find { it.id == id }?.let { Adapters.humanizeKey(it.translationKey) } ?: "#$id"
-            add(Triple("cat-$id", "Catégorie : $label") { selectedCatIds = selectedCatIds - id })
+            add(Triple("cat-$id", t(Tr.LABEL_VALUE, t(Tr.CATALOGUE_CHIP_CATEGORY), label)) { selectedCatIds = selectedCatIds - id })
         }
-        selectedDecs.forEach { d -> add(Triple("dec-$d", "Décennie : ${d}s") { selectedDecs = selectedDecs - d }) }
+        selectedDecs.forEach { d -> add(Triple("dec-$d", t(Tr.LABEL_VALUE, t(Tr.CATALOGUE_CHIP_DECADE), t(Tr.CATALOGUE_DECADE_VALUE, d))) { selectedDecs = selectedDecs - d }) }
         customFilters.forEachIndexed { idx, c ->
-            val label = if (c.displayValue != null) "${c.displayLabel} : ${c.displayValue}" else c.displayLabel
+            val label = if (c.displayValue != null) t(Tr.LABEL_VALUE, c.displayLabel, c.displayValue) else c.displayLabel
             add(Triple("custom-$idx", label) { customFilters = customFilters.filterIndexed { i, _ -> i != idx } })
         }
     }
@@ -291,8 +294,8 @@ fun CatalogueScreen() {
         Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = com.chocoplusmobile.ui.components.TAB_BAR_CLEARANCE)) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 16.dp, bottom = 10.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                 Column {
-                    Text("Catalogue", color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 24.sp, letterSpacing = (-0.6).sp)
-                    Text("$total titre${if (total > 1) "s" else ""}", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
+                    Text(t(Tr.PAGE_CATALOGUE), color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 24.sp, letterSpacing = (-0.6).sp)
+                    Text(tCount(Tr.TITLES_COUNT_ONE, Tr.TITLES_COUNT_MANY, total), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
                 }
                 Row(
                     modifier = Modifier
@@ -304,7 +307,7 @@ fun CatalogueScreen() {
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Icon(AppIcon.of("tune"), contentDescription = null, tint = ChocoColors.accent, modifier = androidx.compose.ui.Modifier.size(18.dp))
-                    Text("Filtrer", color = ChocoColors.accent, fontFamily = ChocoFonts.bodyBold, fontSize = 13.sp)
+                    Text(t(Tr.CATALOGUE_FILTER_BUTTON), color = ChocoColors.accent, fontFamily = ChocoFonts.bodyBold, fontSize = 13.sp)
                 }
             }
 
@@ -336,11 +339,11 @@ fun CatalogueScreen() {
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                 verticalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                Text("TRI", color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp, letterSpacing = 0.8.sp, modifier = Modifier.padding(top = 6.dp))
-                SORTS.forEach { s -> ChocoChip(label = s.label, active = sortLabel == s.label, white = true, small = true, onClick = { sortLabel = s.label; sortAscending = s.ascendingDefault }) }
+                Text(t(Tr.CATALOGUE_SORT_LABEL), color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp, letterSpacing = 0.8.sp, modifier = Modifier.padding(top = 6.dp))
+                SORTS.forEach { s -> ChocoChip(label = t(s.label), active = sortValue == s.value, white = true, small = true, onClick = { sortValue = s.value; sortAscending = s.ascendingDefault }) }
                 Icon(
                     AppIcon.of(if (sortAscending) "expand_less" else "expand_more"),
-                    contentDescription = if (sortAscending) "Ordre croissant" else "Ordre décroissant",
+                    contentDescription = t(if (sortAscending) Tr.SORT_ASCENDING else Tr.SORT_DESCENDING),
                     tint = ChocoColors.accent,
                     modifier = Modifier.padding(top = 3.dp).size(22.dp).clickable { sortAscending = !sortAscending },
                 )
@@ -366,7 +369,7 @@ fun CatalogueScreen() {
                                 val ui = Adapters.mapMediaToUi(m)
                                 val tileModifier = Modifier.fillMaxWidth(widthPct).clickable { openMedia(m) }
                                 if (format == PosterFormat.V) {
-                                    Poster(title = ui.title, uri = ui.posterUrl, ratio = PosterRatio.R2_3, radius = 8.dp, titleSize = 10.5.sp, badge = if (ui.type == UiMediaType.SERIE) "SÉRIE" else null, modifier = tileModifier)
+                                    Poster(title = ui.title, uri = ui.posterUrl, ratio = PosterRatio.R2_3, radius = 8.dp, titleSize = 10.5.sp, badge = if (ui.type == UiMediaType.SERIE) t(Tr.BADGE_SERIES) else null, modifier = tileModifier)
                                 } else {
                                     Poster(title = ui.title, uri = ui.backdropUrl, ratio = PosterRatio.R16_9, radius = 10.dp, titleSize = if (cols == 1) 15.sp else 12.sp, modifier = tileModifier) {
                                         Box(modifier = Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.BottomStart) {
@@ -399,7 +402,7 @@ fun CatalogueScreen() {
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            if (loadingMore) CircularProgressIndicator(color = ChocoColors.accent) else Text("Charger plus", color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold, fontSize = 13.sp)
+                            if (loadingMore) CircularProgressIndicator(color = ChocoColors.accent) else Text(t(Tr.LOAD_MORE), color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold, fontSize = 13.sp)
                         }
                     }
                 }
@@ -409,47 +412,47 @@ fun CatalogueScreen() {
 
     ChocoBottomSheet(visible = filtersOpen, onClose = { filtersOpen = false }) {
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Filtres", color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 19.sp)
+            Text(t(Tr.CATALOGUE_FILTERS_TITLE), color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 19.sp)
             Text(
-                "Tout effacer",
+                t(Tr.CATALOGUE_CLEAR_ALL),
                 color = ChocoColors.accent,
                 fontFamily = ChocoFonts.bodyBold,
                 fontSize = 12.5.sp,
                 modifier = Modifier.clickable {
-                    media = "Tout"; selectedCatIds = emptySet(); selectedDecs = emptySet(); customFilters = emptyList()
+                    media = MediaFilter.ALL; selectedCatIds = emptySet(); selectedDecs = emptySet(); customFilters = emptyList()
                 },
             )
         }
 
-        FilterGroup("TYPE DE MÉDIA") {
-            MEDIA_OPTIONS.forEach { o -> ChocoChip(label = o, active = media == o, onClick = { media = o }) }
+        FilterGroup(t(Tr.CATALOGUE_GROUP_MEDIA)) {
+            MediaFilter.entries.forEach { o -> ChocoChip(label = t(o.label), active = media == o, onClick = { media = o }) }
         }
-        FilterGroup("CATÉGORIE (plusieurs possibles)") {
+        FilterGroup(t(Tr.CATALOGUE_GROUP_CATEGORY)) {
             categories.forEach { c ->
                 val active = selectedCatIds.contains(c.id)
                 ChocoChip(label = Adapters.humanizeKey(c.translationKey), active = active, onClick = { selectedCatIds = if (active) selectedCatIds - c.id else selectedCatIds + c.id })
             }
         }
-        FilterGroup("DÉCENNIE (plusieurs possibles)") {
+        FilterGroup(t(Tr.CATALOGUE_GROUP_DECADE)) {
             DEC_OPTIONS.forEach { o ->
                 val active = selectedDecs.contains(o)
                 ChocoChip(label = o, active = active, onClick = { selectedDecs = if (active) selectedDecs - o else selectedDecs + o })
             }
         }
-        FilterGroup("AUTRE FILTRE") {
+        FilterGroup(t(Tr.CATALOGUE_GROUP_OTHER)) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     ADVANCED_FILTER_TYPES.forEachIndexed { idx, opt ->
-                        ChocoChip(label = opt.label, active = advancedTypeIdx == idx, onClick = { advancedTypeIdx = idx })
+                        ChocoChip(label = t(opt.label), active = advancedTypeIdx == idx, onClick = { advancedTypeIdx = idx })
                     }
                 }
                 val selectedOpt = ADVANCED_FILTER_TYPES[advancedTypeIdx]
                 if (selectedOpt.filterType == null) {
                     JobDropdown(jobs = jobOptions, selected = selectedJob, onSelect = { selectedJob = it }, modifier = Modifier.padding(top = 10.dp))
                 }
-                AdvancedTextInput(value = advancedValueText, onValueChange = { advancedValueText = it }, placeholder = "Valeur à rechercher…", modifier = Modifier.padding(top = 10.dp))
+                AdvancedTextInput(value = advancedValueText, onValueChange = { advancedValueText = it }, placeholder = t(Tr.CATALOGUE_VALUE_PLACEHOLDER), modifier = Modifier.padding(top = 10.dp))
                 PrimaryButton(
-                    label = "Ajouter ce filtre",
+                    label = t(Tr.CATALOGUE_ADD_FILTER),
                     variant = ButtonVariant.OUTLINE,
                     height = 42.dp,
                     modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
@@ -457,7 +460,7 @@ fun CatalogueScreen() {
                         val typeData = selectedOpt.filterType?.wireValue ?: selectedJob
                         val value = advancedValueText.trim()
                         if (!typeData.isNullOrEmpty() && value.isNotEmpty()) {
-                            val label = if (selectedOpt.filterType == null) "Métier ($typeData)" else selectedOpt.label
+                            val label = if (selectedOpt.filterType == null) Tr.CATALOGUE_FILTER_JOB_WITH.text(typeData) else selectedOpt.label.text()
                             customFilters = customFilters + CustomFilterEntry(typeData, label, value)
                             advancedValueText = ""
                         }
@@ -466,7 +469,7 @@ fun CatalogueScreen() {
             }
         }
 
-        PrimaryButton(label = "Voir les $total titres", onClick = { filtersOpen = false }, height = 50.dp, modifier = Modifier.fillMaxWidth())
+        PrimaryButton(label = tCount(Tr.CATALOGUE_SEE_RESULTS_ONE, Tr.CATALOGUE_SEE_RESULTS_MANY, total), onClick = { filtersOpen = false }, height = 50.dp, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -512,7 +515,7 @@ private fun JobDropdown(jobs: List<String>, selected: String?, onSelect: (String
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                selected ?: if (jobs.isEmpty()) "Chargement des métiers…" else "Choisir un métier…",
+                selected ?: t(if (jobs.isEmpty()) Tr.CATALOGUE_JOBS_LOADING else Tr.CATALOGUE_PICK_JOB),
                 color = if (selected != null) ChocoColors.text else ChocoColors.textMuted,
                 fontFamily = ChocoFonts.bodyRegular,
                 fontSize = 13.5.sp,

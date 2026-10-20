@@ -38,6 +38,8 @@ import java.io.FileOutputStream
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.text
 
 /** Only these roles may download — mirrors the backend's FamilyUserGuard. */
 fun Role?.canDownload(): Boolean = this == Role.ADMIN || this == Role.FAMILY
@@ -283,7 +285,7 @@ object DownloadManager {
             throw e
         } catch (e: Exception) {
             Log.w(TAG, "Download $key failed", e)
-            updateEntry(key) { it.copy(status = DownloadStatus.FAILED, error = e.message ?: "Erreur réseau") }
+            updateEntry(key) { it.copy(status = DownloadStatus.FAILED, error = e.message ?: Tr.NETWORK_ERROR.text()) }
         } finally {
             withContext(NonCancellable) { persist() }
         }
@@ -367,8 +369,8 @@ object DownloadManager {
         coroutineContext[Job]?.invokeOnCompletion { if (it != null) call.cancel() }
 
         call.execute().use { response ->
-            if (!response.isSuccessful) throw java.io.IOException("Erreur ${response.code}")
-            val body = response.body ?: throw java.io.IOException("Réponse vide")
+            if (!response.isSuccessful) throw java.io.IOException(Tr.DOWNLOAD_ERROR_HTTP.text(response.code))
+            val body = response.body ?: throw java.io.IOException(Tr.DOWNLOAD_ERROR_EMPTY.text())
             // 206 = the server honoured the Range header, append; 200 = it
             // sent the whole file again, start over.
             val resumed = response.code == 206 && offset > 0
@@ -397,12 +399,12 @@ object DownloadManager {
                     }
                 }
             }
-            if (total > 0 && written < total) throw java.io.IOException("Téléchargement interrompu")
+            if (total > 0 && written < total) throw java.io.IOException(Tr.DOWNLOAD_ERROR_INTERRUPTED.text())
             updateEntry(key) { it.copy(bytesDownloaded = written, totalBytes = if (total > 0) total else written) }
         }
         val target = videoFile(key)
         target.delete()
-        if (!part.renameTo(target)) throw java.io.IOException("Impossible d'enregistrer la vidéo")
+        if (!part.renameTo(target)) throw java.io.IOException(Tr.DOWNLOAD_ERROR_SAVE.text())
     }
 
     private suspend fun persist() {

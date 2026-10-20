@@ -10,6 +10,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.text
 
 /**
  * Backend URL + secret API header pair — entered in the app's server form
@@ -18,14 +20,14 @@ import kotlin.system.exitProcess
 data class ServerConfig(val url: String, val headerName: String, val headerValue: String) {
     /** Why this config can't be saved, or null when it's usable. */
     fun validationError(): String? {
-        val parsed = url.toHttpUrlOrNull() ?: return "URL invalide (ex. https://api.exemple.com)."
-        if (parsed.query != null || parsed.fragment != null) return "L'URL ne doit pas contenir de paramètres."
-        if (headerName.isBlank()) return "Le nom du header est requis."
-        if (headerValue.isEmpty()) return "La clé du header est requise."
+        val parsed = url.toHttpUrlOrNull() ?: return Tr.SERVER_INVALID_URL.text()
+        if (parsed.query != null || parsed.fragment != null) return Tr.SERVER_URL_HAS_PARAMS.text()
+        if (headerName.isBlank()) return Tr.SERVER_HEADER_NAME_REQUIRED.text()
+        if (headerValue.isEmpty()) return Tr.SERVER_HEADER_VALUE_REQUIRED.text()
         // OkHttp throws on any header it wouldn't send — catch it here, not
         // on the first request.
         return runCatching { Headers.Builder().add(headerName, headerValue) }
-            .exceptionOrNull()?.let { "Nom ou clé de header invalide (caractères non autorisés)." }
+            .exceptionOrNull()?.let { Tr.SERVER_HEADER_INVALID.text() }
     }
 
     companion object {
@@ -88,12 +90,12 @@ object ServerConfigHolder {
 
 /** Outcome of the form's "Tester" button. */
 sealed class ServerTestResult(val message: String, val success: Boolean) {
-    class Ok(code: Int) : ServerTestResult("Connexion réussie (HTTP $code).", true)
-    class Reachable(code: Int) : ServerTestResult("Serveur joignable, header accepté (HTTP $code).", true)
-    class Rejected(code: Int) : ServerTestResult("Serveur joignable mais le header est refusé (HTTP $code).", false)
-    class ServerError(code: Int) : ServerTestResult("Le serveur répond avec une erreur (HTTP $code).", false)
-    class Unreachable(detail: String) : ServerTestResult("Serveur injoignable : $detail", false)
-    object Cleartext : ServerTestResult("HTTP non chiffré bloqué par l'application — utilise une URL en https://.", false)
+    class Ok(code: Int) : ServerTestResult(Tr.SERVER_TEST_OK.text(code), true)
+    class Reachable(code: Int) : ServerTestResult(Tr.SERVER_TEST_REACHABLE.text(code), true)
+    class Rejected(code: Int) : ServerTestResult(Tr.SERVER_TEST_REJECTED.text(code), false)
+    class ServerError(code: Int) : ServerTestResult(Tr.SERVER_TEST_SERVER_ERROR.text(code), false)
+    class Unreachable(detail: String) : ServerTestResult(Tr.SERVER_TEST_UNREACHABLE.text(detail), false)
+    object Cleartext : ServerTestResult(Tr.SERVER_TEST_CLEARTEXT.text(), false)
 }
 
 object ServerConnectionTester {

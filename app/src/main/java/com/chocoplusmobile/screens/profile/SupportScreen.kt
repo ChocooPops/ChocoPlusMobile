@@ -45,6 +45,9 @@ import com.chocoplusmobile.ui.icons.AppIcon
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
 
 /** Mirrors the RN app's screens/Profile/SupportScreen.tsx. */
 @Composable
@@ -70,7 +73,7 @@ fun SupportScreen() {
         try {
             topics = NetworkModule.safeCall { NetworkModule.api.getSupportTopics() }
         } catch (e: Exception) {
-            topicsError = e.message ?: "Erreur réseau"
+            topicsError = e.message ?: Tr.NETWORK_ERROR.text()
         } finally {
             topicsLoading = false
         }
@@ -96,10 +99,10 @@ fun SupportScreen() {
                 if (result.state) {
                     sent = true
                 } else {
-                    submitError = result.message.ifBlank { "Envoi impossible" }
+                    submitError = result.message.ifBlank { Tr.SUPPORT_SEND_FAILED.text() }
                 }
             } catch (e: Exception) {
-                submitError = e.message ?: "Envoi impossible"
+                submitError = e.message ?: Tr.SUPPORT_SEND_FAILED.text()
             } finally {
                 sending = false
             }
@@ -107,9 +110,9 @@ fun SupportScreen() {
     }
 
     Column(modifier = Modifier.fillMaxSize().background(ChocoColors.bg).padding(top = 50.dp).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 16.dp, bottom = com.chocoplusmobile.ui.components.TAB_BAR_CLEARANCE)) {
-        ScreenHeaderBack(title = "Signaler un bug", onBack = { navController.popBackStack() })
+        ScreenHeaderBack(title = t(Tr.SUPPORT_TITLE), onBack = { navController.popBackStack() })
         Text(
-            "Plus ta description est précise, plus vite on répare. Ça part directement à l'équipe d'administration.",
+            t(Tr.SUPPORT_INTRO),
             color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.5.sp, lineHeight = 19.sp,
             modifier = Modifier.padding(top = 8.dp, bottom = 20.dp),
         )
@@ -121,16 +124,16 @@ fun SupportScreen() {
             ) {
                 Icon(AppIcon.of("task_alt"), contentDescription = null, tint = ChocoColors.accent, modifier = androidx.compose.ui.Modifier)
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Merci, c'est transmis", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 15.sp, modifier = Modifier.padding(bottom = 4.dp))
-                    Text("Tu recevras un mail dès qu'un administrateur s'en occupe.", color = ChocoColors.textSecondary, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.5.sp, lineHeight = 19.sp)
-                    PrimaryButton(label = "Nouveau signalement", onClick = ::reset, height = 36.dp, modifier = Modifier.padding(top = 12.dp))
+                    Text(t(Tr.SUPPORT_SENT_TITLE), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 15.sp, modifier = Modifier.padding(bottom = 4.dp))
+                    Text(t(Tr.SUPPORT_SENT_DESC), color = ChocoColors.textSecondary, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.5.sp, lineHeight = 19.sp)
+                    PrimaryButton(label = t(Tr.SUPPORT_NEW_REPORT), onClick = ::reset, height = 36.dp, modifier = Modifier.padding(top = 12.dp))
                 }
             }
         } else {
-            SupportFieldLabel("Sujet", required = true)
-            SupportField(subject, { subject = it }, "Ex : la reprise de lecture repart à zéro")
+            SupportFieldLabel(t(Tr.SUPPORT_SUBJECT), required = true)
+            SupportField(subject, { subject = it }, t(Tr.SUPPORT_SUBJECT_HINT))
 
-            SupportFieldLabel("Page concernée", required = true, topPadding = 18.dp)
+            SupportFieldLabel(t(Tr.SUPPORT_AREA), required = true, topPadding = 18.dp)
             when {
                 topicsLoading -> LoadingState(compact = true)
                 topicsError != null -> ErrorState(message = topicsError!!, onRetry = { topicsRetry++ })
@@ -151,11 +154,11 @@ fun SupportScreen() {
                 }
             }
 
-            SupportFieldLabel("Description", required = true, topPadding = 18.dp)
+            SupportFieldLabel(t(Tr.SUPPORT_DESCRIPTION), required = true, topPadding = 18.dp)
             TextField(
                 value = description,
                 onValueChange = { description = it },
-                placeholder = { Text("Ce qui se passe, et les étapes pour le reproduire…", color = Color(0x59FFFFFF)) },
+                placeholder = { Text(t(Tr.SUPPORT_DESCRIPTION_HINT), color = Color(0x59FFFFFF)) },
                 textStyle = TextStyle(color = ChocoColors.text, fontFamily = ChocoFonts.bodyRegular, fontSize = 14.sp, lineHeight = 20.sp),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, disabledContainerColor = Color.Transparent,
@@ -167,13 +170,13 @@ fun SupportScreen() {
             if (submitError != null) Text(submitError!!, color = Color(0xFFFF9C9C), fontFamily = ChocoFonts.bodyMedium, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp))
 
             if (ready) {
-                PrimaryButton(label = "Envoyer le rapport", onClick = ::submit, loading = sending, height = 48.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
+                PrimaryButton(label = t(Tr.SUPPORT_SEND), onClick = ::submit, loading = sending, height = 48.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 18.dp).height(48.dp).background(Color(0x0FFFFFFF), RoundedCornerShape(12.dp)),
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    Text("Les trois champs sont requis", color = ChocoColors.textDisabled, fontFamily = ChocoFonts.bodyBold, fontSize = 15.sp, modifier = Modifier.padding(vertical = 13.dp))
+                    Text(t(Tr.SUPPORT_ALL_REQUIRED), color = ChocoColors.textDisabled, fontFamily = ChocoFonts.bodyBold, fontSize = 15.sp, modifier = Modifier.padding(vertical = 13.dp))
                 }
             }
         }

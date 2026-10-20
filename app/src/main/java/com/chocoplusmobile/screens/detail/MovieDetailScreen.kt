@@ -77,6 +77,9 @@ import com.chocoplusmobile.ui.icons.MyListCheckVector
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
 
 /** Mirrors the RN app's screens/Detail/MovieDetailScreen.tsx. Reads the full
  * Media object passed via NavCache (see its docstring) — every list
@@ -164,7 +167,7 @@ fun MovieDetailScreen() {
                 metaRecord = NetworkModule.safeCall { NetworkModule.api.getMovieById(media.id) }
                 metaFor = media.id
             } catch (e: Exception) {
-                metaError = e.message ?: "Erreur réseau"
+                metaError = e.message ?: Tr.NETWORK_ERROR.text()
             } finally {
                 metaLoading = false
             }
@@ -264,15 +267,15 @@ fun MovieDetailScreen() {
                     if ((progress ?: 0.0) > 0) {
                         Column(modifier = Modifier.padding(top = 14.dp)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Reprendre la lecture", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp)
-                                Text("${progress!!.toInt()} %", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp)
+                                Text(t(Tr.DETAIL_RESUME_PLAYBACK), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp)
+                                Text(t(Tr.PERCENT, progress!!.toInt()), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp)
                             }
                             ChocoProgressBar(progress = progress!!, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
                         }
                     }
 
                     Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                        PrimaryButton(label = if ((progress ?: 0.0) > 0) "Reprendre" else "Lecture", icon = AppIcon.of("play_arrow"), onClick = ::play, loading = playing, height = 48.dp, modifier = Modifier.weight(1f))
+                        PrimaryButton(label = t(if ((progress ?: 0.0) > 0) Tr.RESUME else Tr.PLAYBACK), icon = AppIcon.of("play_arrow"), onClick = ::play, loading = playing, height = 48.dp, modifier = Modifier.weight(1f))
                         SquareIconButton(
                             icon = if (inList) MyListCheckVector(ChocoColors.text) else MyListAddVector(ChocoColors.text),
                             size = 48.dp,
@@ -291,10 +294,10 @@ fun MovieDetailScreen() {
 
                     Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         if (ui.genres.isNotEmpty()) {
-                            DetailMetaChipRow("Genres", ui.genres, onClick = { tag -> tag.id?.let { openCatalogueFor(CatalogueEntryFilter.Category(it)) } })
+                            DetailMetaChipRow(t(Tr.DETAIL_GENRES), ui.genres, onClick = { tag -> tag.id?.let { openCatalogueFor(CatalogueEntryFilter.Category(it)) } })
                         }
                         if (ui.keywords.isNotEmpty()) {
-                            DetailMetaChipRow("Mots-clés", ui.keywords, dim = true, onClick = { tag -> openCatalogueFor(CatalogueEntryFilter.Keyword(tag.name)) })
+                            DetailMetaChipRow(t(Tr.DETAIL_KEYWORDS), ui.keywords, dim = true, onClick = { tag -> openCatalogueFor(CatalogueEntryFilter.Keyword(tag.name)) })
                         }
                     }
                 }
@@ -305,7 +308,7 @@ fun MovieDetailScreen() {
                 if (ui.cast.isNotEmpty()) {
                     item {
                         Column(modifier = Modifier.padding(top = 24.dp)) {
-                            Text("Distribution", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
+                            Text(t(Tr.DETAIL_CAST), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
                             LazyRow(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 items(ui.cast.size) { i ->
                                     val p = ui.cast[i]
@@ -323,7 +326,7 @@ fun MovieDetailScreen() {
                 if (ui.crew.isNotEmpty()) {
                     item {
                         Column(modifier = Modifier.padding(top = 24.dp)) {
-                            Text("Équipe technique", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
+                            Text(t(Tr.DETAIL_CREW), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
                             LazyRow(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 items(ui.crew.size) { i ->
                                     val p = ui.crew[i]
@@ -342,14 +345,14 @@ fun MovieDetailScreen() {
             if (similarLoading) {
                 item {
                     Column(modifier = Modifier.padding(top = 24.dp, bottom = 30.dp)) {
-                        Text("Titres similaires", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
+                        Text(t(Tr.DETAIL_SIMILAR), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
                         LoadingState(compact = true)
                     }
                 }
             } else if (similar.isNotEmpty()) {
                 item {
                     Column(modifier = Modifier.padding(top = 24.dp, bottom = 30.dp)) {
-                        Text("Titres similaires", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
+                        Text(t(Tr.DETAIL_SIMILAR), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 11.dp))
                         androidx.compose.foundation.layout.FlowRow(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(9.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                             similar.forEach { m ->
                                 val simUi = Adapters.mapMediaToUi(m)

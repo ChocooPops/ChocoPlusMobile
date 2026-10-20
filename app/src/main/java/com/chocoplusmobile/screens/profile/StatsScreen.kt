@@ -46,17 +46,20 @@ import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlin.math.roundToInt
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
 
-private val MEDIA_FILTERS = listOf("Tout" to "all", "Films" to "MOVIE", "Séries" to "SERIES")
+private val MEDIA_FILTERS = listOf(Tr.CATALOGUE_MEDIA_ALL to "all", Tr.PAGE_FILMS to "MOVIE", Tr.PAGE_SERIES to "SERIES")
 private val DONUT_COLORS = listOf(ChocoColors.accent, Color(0xFFC8A11A), Color(0x80FFFFFF), Color(0x4DFFFFFF), Color(0x29FFFFFF))
 
 /** The 3 ways the backend can break down "which categories does this user
  * watch most" — same category set, different weighting. The user picks
  * which one the donut reflects. */
-private enum class CategoryStatMode(val label: String) {
-    COUNT("Titres"),
-    WEIGHTED("Pondéré"),
-    TIME("Temps"),
+private enum class CategoryStatMode(val label: Tr) {
+    COUNT(Tr.STATS_MODE_COUNT),
+    WEIGHTED(Tr.STATS_MODE_WEIGHTED),
+    TIME(Tr.STATS_MODE_TIME),
 }
 
 private data class CategorySegment(val name: String, val percentage: Double)
@@ -100,14 +103,14 @@ fun StatsScreen() {
                 data = StatsBundle(wt.await(), hist.await(), top.await(), prefsCount.await(), prefsWeighted.await(), prefsTime.await())
             }
         } catch (e: Exception) {
-            error = e.message ?: "Erreur réseau"
+            error = e.message ?: Tr.NETWORK_ERROR.text()
         } finally {
             loading = false
         }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(ChocoColors.bg).padding(top = 50.dp).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 16.dp, bottom = com.chocoplusmobile.ui.components.TAB_BAR_CLEARANCE)) {
-        ScreenHeaderBack(title = "Statistiques", onBack = { navController.popBackStack() })
+        ScreenHeaderBack(title = t(Tr.PROFILE_STATS), onBack = { navController.popBackStack() })
 
         Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 18.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             MEDIA_FILTERS.forEach { (label, value) ->
@@ -121,7 +124,7 @@ fun StatsScreen() {
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(label, color = if (active) ChocoColors.onAccent else ChocoColors.textTertiary, fontFamily = ChocoFonts.bodyBold, fontSize = 12.5.sp)
+                    Text(t(label), color = if (active) ChocoColors.onAccent else ChocoColors.textTertiary, fontFamily = ChocoFonts.bodyBold, fontSize = 12.5.sp)
                 }
             }
         }
@@ -136,19 +139,19 @@ fun StatsScreen() {
 
                 StatCard {
                     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Text("Heures de visionnage", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 14.5.sp)
-                        Text("7 derniers jours", color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp)
+                        Text(t(Tr.STATS_WATCH_HOURS), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 14.5.sp)
+                        Text(t(Tr.STATS_LAST_7_DAYS), color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp)
                     }
-                    Text("${d.watchTime.total.totalHours} h ${d.watchTime.total.totalMinutes.toString().padStart(2, '0')}", color = ChocoColors.accent, fontFamily = ChocoFonts.headingExtraBold, fontSize = 32.sp, letterSpacing = (-1).sp, modifier = Modifier.padding(top = 8.dp))
+                    Text(t(Tr.STATS_HOURS_MINUTES, d.watchTime.total.totalHours, d.watchTime.total.totalMinutes.toString().padStart(2, '0')), color = ChocoColors.accent, fontFamily = ChocoFonts.headingExtraBold, fontSize = 32.sp, letterSpacing = (-1).sp, modifier = Modifier.padding(top = 8.dp))
                     Text(
-                        "${d.watchTime.movies.contentCount} films · ${d.watchTime.series.contentCount} séries · ${d.watchTime.series.episodeCount ?: 0} épisodes",
+                        t(Tr.STATS_COUNTS, d.watchTime.movies.contentCount, d.watchTime.series.contentCount, d.watchTime.series.episodeCount ?: 0),
                         color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 11.5.sp, modifier = Modifier.padding(bottom = 16.dp),
                     )
                     if (bars.isNotEmpty()) {
                         Row(modifier = Modifier.fillMaxWidth().height(118.dp), horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.Bottom) {
                             bars.forEach { b ->
                                 Column(modifier = Modifier.weight(1f).fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
-                                    Text("${"%.1f".format(b.hours)}h", color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 9.5.sp)
+                                    Text(t(Tr.STATS_BAR_HOURS, "%.1f".format(b.hours)), color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 9.5.sp)
                                     Box(
                                         modifier = Modifier
                                             .padding(top = 7.dp)
@@ -165,13 +168,13 @@ fun StatsScreen() {
 
                 if (d.topMedia.topMedia.isNotEmpty()) {
                     StatCard {
-                        Text("Top contenus par visionnages", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 14.5.sp, modifier = Modifier.padding(bottom = 14.dp))
+                        Text(t(Tr.STATS_TOP_CONTENT), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 14.5.sp, modifier = Modifier.padding(bottom = 14.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(13.dp)) {
                             d.topMedia.topMedia.take(5).forEachIndexed { i, t ->
                                 Column {
                                     Row(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                                         Text(t.title, color = Color(0xD9FFFFFF), fontFamily = ChocoFonts.bodySemiBold, fontSize = 12.5.sp, maxLines = 1, modifier = Modifier.weight(1f))
-                                        Text("${t.watchCount}×", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodySemiBold, fontSize = 11.sp)
+                                        Text(t(Tr.STATS_WATCH_COUNT, t.watchCount), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodySemiBold, fontSize = 11.sp)
                                     }
                                     ChocoProgressBar(progress = t.avgProgress, height = 6.dp, fillColor = if (i == 0) ChocoColors.accent else Color(0x66FFD301))
                                 }
@@ -203,7 +206,7 @@ fun StatsScreen() {
                 }
                 if (donutSegments.isNotEmpty()) {
                     StatCard {
-                        Text("Catégories les plus visionnées", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 14.5.sp, modifier = Modifier.padding(bottom = 14.dp))
+                        Text(t(Tr.STATS_TOP_CATEGORIES), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 14.5.sp, modifier = Modifier.padding(bottom = 14.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(bottom = 14.dp)) {
                             CategoryStatMode.entries.forEach { mode ->
                                 val active = categoryMode == mode
@@ -213,7 +216,7 @@ fun StatsScreen() {
                                         .clickable { categoryMode = mode }
                                         .padding(horizontal = 12.dp, vertical = 6.dp),
                                 ) {
-                                    Text(mode.label, color = if (active) ChocoColors.onAccent else ChocoColors.textTertiary, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp)
+                                    Text(t(mode.label), color = if (active) ChocoColors.onAccent else ChocoColors.textTertiary, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp)
                                 }
                             }
                         }
@@ -241,7 +244,7 @@ fun StatsScreen() {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Box(modifier = Modifier.size(9.dp).background(color, RoundedCornerShape(3.dp)))
                                         Text(c.name, color = Color(0xB8FFFFFF), fontFamily = ChocoFonts.bodyRegular, fontSize = 11.5.sp, maxLines = 1, modifier = Modifier.weight(1f))
-                                        Text("${c.percentage.roundToInt()} %", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp)
+                                        Text(t(Tr.PERCENT, c.percentage.roundToInt()), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp)
                                     }
                                 }
                             }

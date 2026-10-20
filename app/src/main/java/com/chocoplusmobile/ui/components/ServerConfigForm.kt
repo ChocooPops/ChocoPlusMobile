@@ -54,6 +54,8 @@ import com.chocoplusmobile.ui.icons.AppIcon
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 private val SuccessColor = Color(0xFF6BD68A)
 
@@ -87,25 +89,25 @@ fun ServerConfigForm(modifier: Modifier = Modifier) {
             .background(ChocoColors.surfaceAlt)
             .padding(horizontal = 24.dp, vertical = 28.dp),
     ) {
-        Text("Communication avec le serveur", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 20.sp)
+        Text(t(Tr.SERVER_FORM_TITLE), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 20.sp)
 
         ConfigField(
-            label = "Url principale du serveur :",
+            label = t(Tr.SERVER_FORM_URL),
             value = url,
             onValueChange = { v -> edit { url = v } },
-            placeholder = "https://api.exemple.com",
+            placeholder = t(Tr.SERVER_FORM_URL_PLACEHOLDER),
             keyboardType = KeyboardType.Uri,
             modifier = Modifier.padding(top = 24.dp),
         )
         ConfigField(
-            label = "Nom du header de sécurité :",
+            label = t(Tr.SERVER_FORM_HEADER_NAME),
             value = headerName,
             onValueChange = { v -> edit { headerName = v } },
             secret = true,
             modifier = Modifier.padding(top = 18.dp),
         )
         ConfigField(
-            label = "Clé du header de sécurité :",
+            label = t(Tr.SERVER_FORM_HEADER_VALUE),
             value = headerValue,
             onValueChange = { v -> edit { headerValue = v } },
             secret = true,
@@ -126,7 +128,7 @@ fun ServerConfigForm(modifier: Modifier = Modifier) {
 
         Row(modifier = Modifier.fillMaxWidth().padding(top = 26.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             PrimaryButton(
-                label = "Tester",
+                label = t(Tr.SERVER_FORM_TEST),
                 variant = ButtonVariant.OUTLINE,
                 enabled = error == null && !testing,
                 loading = testing,
@@ -142,7 +144,7 @@ fun ServerConfigForm(modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1f),
             )
             PrimaryButton(
-                label = "Enregistrer",
+                label = t(Tr.SAVE),
                 enabled = error == null && !testing,
                 onClick = { ServerConfigHolder.save(context, config) },
                 height = 46.dp,
@@ -201,7 +203,7 @@ private fun ConfigField(
             if (secret) {
                 Icon(
                     AppIcon.of(if (hidden) "visibility_off" else "visibility"),
-                    contentDescription = if (hidden) "Afficher" else "Masquer",
+                    contentDescription = t(if (hidden) Tr.SHOW else Tr.HIDE),
                     tint = ChocoColors.text,
                     modifier = Modifier.padding(start = 10.dp).size(20.dp).clickable { hidden = !hidden },
                 )

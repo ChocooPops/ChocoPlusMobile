@@ -34,6 +34,9 @@ import com.chocoplusmobile.data.ImageQuality
 import com.chocoplusmobile.data.ImageCategory
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.tCount
 
 /**
  * "Toutes les métadonnées" for PosterPreviewSheet's info button (and now
@@ -72,7 +75,7 @@ fun MediaMetadataSheet(
             error != null -> Column {
                 MetaSheetTitle()
                 Text(error, color = androidx.compose.ui.graphics.Color(0xFFFF9C9C), fontFamily = ChocoFonts.bodyMedium, fontSize = 12.5.sp, modifier = Modifier.padding(vertical = 12.dp))
-                PrimaryButton(label = "Fermer", variant = ButtonVariant.OUTLINE, onClick = onClose, height = 46.dp, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+                PrimaryButton(label = t(Tr.CLOSE), variant = ButtonVariant.OUTLINE, onClick = onClose, height = 46.dp, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
             }
             media != null -> {
                 val logo = Adapters.logoUri(media)
@@ -88,14 +91,14 @@ fun MediaMetadataSheet(
                         Column {
                             MetaSheetTitle()
                             if (logo != null) {
-                                MetaSection("LOGO") {
+                                MetaSection(t(Tr.LOGO).uppercase()) {
                                     Box(modifier = Modifier.background(ChocoColors.surfaceAlt2, RoundedCornerShape(8.dp)).padding(horizontal = 16.dp, vertical = 14.dp)) {
                                         LogoImage(uri = logo, height = 54.dp, maxWidth = 200.dp)
                                     }
                                 }
                             }
                             if (media.otherTitles.isNotEmpty()) {
-                                MetaSection("TITRES ALTERNATIFS") {
+                                MetaSection(t(Tr.META_ALT_TITLES).uppercase()) {
                                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         media.otherTitles.forEach { t ->
                                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -109,15 +112,15 @@ fun MediaMetadataSheet(
                             // Enlarged per explicit request — these used to be
                             // the same thumbnail size as a catalogue grid tile,
                             // too small to actually judge a poster/background by.
-                            ImageGalleryRow("Affiches", normalPosters, ratio = PosterRatio.R2_3, itemWidth = 150.dp)
-                            ImageGalleryRow("Affiches spéciales", specialPosters, ratio = PosterRatio.R2_3, itemWidth = 150.dp)
-                            ImageGalleryRow("Affiches horizontales", horizontalPosters, ratio = PosterRatio.R16_9, itemWidth = 260.dp)
-                            ImageGalleryRow("Arrière-plan", background?.let { listOf(it) } ?: emptyList(), ratio = PosterRatio.R16_9, itemWidth = 260.dp)
+                            ImageGalleryRow(t(Tr.META_POSTERS), normalPosters, ratio = PosterRatio.R2_3, itemWidth = 150.dp)
+                            ImageGalleryRow(t(Tr.META_SPECIAL_POSTERS), specialPosters, ratio = PosterRatio.R2_3, itemWidth = 150.dp)
+                            ImageGalleryRow(t(Tr.META_HORIZONTAL_POSTERS), horizontalPosters, ratio = PosterRatio.R16_9, itemWidth = 260.dp)
+                            ImageGalleryRow(t(Tr.META_BACKGROUND), background?.let { listOf(it) } ?: emptyList(), ratio = PosterRatio.R16_9, itemWidth = 260.dp)
 
                             val cast = media.credits.filter { it.job == "ACTOR" }
                             val crew = media.credits.filter { it.job != "ACTOR" }
                             if (cast.isNotEmpty()) {
-                                MetaSection("CASTING") {
+                                MetaSection(t(Tr.META_CAST).uppercase()) {
                                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                         cast.forEach { c ->
                                             PersonCard(name = c.fullName, role = c.character, photoUrl = ImageQuality.withSize(c.srcPoster, ImageCategory.CREDIT_PHOTO))
@@ -126,7 +129,7 @@ fun MediaMetadataSheet(
                                 }
                             }
                             if (crew.isNotEmpty()) {
-                                MetaSection("ÉQUIPE TECHNIQUE") {
+                                MetaSection(t(Tr.DETAIL_CREW).uppercase()) {
                                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                         crew.forEach { c ->
                                             PersonCard(name = c.fullName, role = Adapters.humanizeJob(c.job), photoUrl = ImageQuality.withSize(c.srcPoster, ImageCategory.CREDIT_PHOTO))
@@ -136,11 +139,11 @@ fun MediaMetadataSheet(
                             }
 
                             if (isSeries && seasons.isNotEmpty()) {
-                                MetaSection("SAISONS") {
+                                MetaSection(t(Tr.META_SEASONS).uppercase()) {
                                     LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                                         items(seasons.size) { idx ->
                                             val s = seasons[idx]
-                                            ChocoChip(label = s.name.ifBlank { "Saison ${s.seasonNumber}" }, active = idx == seasonIdx, onClick = { seasonIdx = idx }, small = true)
+                                            ChocoChip(label = s.name.ifBlank { t(Tr.SEASON_N, s.seasonNumber) }, active = idx == seasonIdx, onClick = { seasonIdx = idx }, small = true)
                                         }
                                     }
                                     selectedSeason?.let { season ->
@@ -156,7 +159,7 @@ fun MediaMetadataSheet(
                                             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
                                                 Text(season.name, color = ChocoColors.text, fontFamily = ChocoFonts.bodySemiBold, fontSize = 13.5.sp)
                                                 Text(
-                                                    "${season.episodes.size} épisode${if (season.episodes.size > 1) "s" else ""}",
+                                                    tCount(Tr.EPISODES_COUNT_ONE, Tr.EPISODES_COUNT_MANY, season.episodes.size),
                                                     color = ChocoColors.textMuted,
                                                     fontFamily = ChocoFonts.bodyRegular,
                                                     fontSize = 11.5.sp,
@@ -167,7 +170,7 @@ fun MediaMetadataSheet(
                                     }
                                 }
                                 Text(
-                                    "ÉPISODES",
+                                    t(Tr.EPISODES).uppercase(),
                                     color = ChocoColors.textFaint,
                                     fontFamily = ChocoFonts.bodyBold,
                                     fontSize = 10.5.sp,
@@ -185,7 +188,7 @@ fun MediaMetadataSheet(
                             Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
                                 rows.forEach { r -> MetadataRowLine(r) }
                             }
-                            PrimaryButton(label = "Fermer", variant = ButtonVariant.OUTLINE, onClick = onClose, height = 46.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
+                            PrimaryButton(label = t(Tr.CLOSE), variant = ButtonVariant.OUTLINE, onClick = onClose, height = 46.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
                         }
                     }
                 }
@@ -196,9 +199,9 @@ fun MediaMetadataSheet(
 
 @Composable
 private fun MetaSheetTitle() {
-    Text("Métadonnées", color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 19.sp)
+    Text(t(Tr.META_TITLE), color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 19.sp)
     Text(
-        "L'édition reste réservée aux administrateurs, sur desktop.",
+        t(Tr.META_ADMIN_ONLY),
         color = ChocoColors.textMuted,
         fontFamily = ChocoFonts.bodyRegular,
         fontSize = 12.sp,

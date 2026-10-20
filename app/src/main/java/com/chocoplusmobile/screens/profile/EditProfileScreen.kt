@@ -49,6 +49,9 @@ import com.chocoplusmobile.ui.components.ScreenHeaderBack
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
 
 /** Mirrors the RN app's screens/Profile/EditProfileScreen.tsx. The photo
  * picker uses a LazyVerticalGrid inside the bottom sheet's non-scrollable
@@ -91,11 +94,11 @@ fun EditProfileScreen() {
         resultMessage = null
 
         if (trimmedPseudo.length < 5) {
-            error = "Le pseudo doit faire au moins 5 caractères."
+            error = Tr.EDIT_PSEUDO_TOO_SHORT.text()
             return
         }
         if (trimmedDate.isEmpty()) {
-            error = "Merci d'indiquer une date de naissance."
+            error = Tr.EDIT_BIRTHDATE_REQUIRED.text()
             return
         }
         // The backend only applies a password change when currentPassWord,
@@ -104,11 +107,11 @@ fun EditProfileScreen() {
         // erroring, so this catches it client-side instead.
         val touchingPassword = currentPassword.isNotEmpty() || newPassword.isNotEmpty() || confirmPassword.isNotEmpty()
         if (touchingPassword && (currentPassword.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty())) {
-            error = "Remplis les 3 champs de mot de passe pour le changer."
+            error = Tr.EDIT_PASSWORD_ALL_FIELDS.text()
             return
         }
         if (newPassword.isNotEmpty() && newPassword != confirmPassword) {
-            error = "Les nouveaux mots de passe ne correspondent pas."
+            error = Tr.EDIT_PASSWORD_MISMATCH.text()
             return
         }
 
@@ -135,7 +138,7 @@ fun EditProfileScreen() {
                     confirmPassword = ""
                 }
             } catch (e: Exception) {
-                error = e.message ?: "Mise à jour impossible"
+                error = e.message ?: Tr.EDIT_UPDATE_FAILED.text()
             } finally {
                 saving = false
             }
@@ -154,25 +157,25 @@ fun EditProfileScreen() {
 
     Column(modifier = Modifier.fillMaxSize().background(ChocoColors.bg).padding(top = 50.dp)) {
         Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 16.dp, bottom = com.chocoplusmobile.ui.components.TAB_BAR_CLEARANCE)) {
-            ScreenHeaderBack(title = "Gérer le profil", onBack = { navController.popBackStack() })
+            ScreenHeaderBack(title = t(Tr.PROFILE_MANAGE), onBack = { navController.popBackStack() })
 
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Avatar(initial = user?.firstName?.firstOrNull()?.uppercase() ?: "?", uri = user?.profilPhoto, size = 88.dp, radius = 8.dp, editable = true, onClick = { photoPickerOpen = true })
-                Text("Modifier la photo de profil", color = ChocoColors.accent, fontFamily = ChocoFonts.bodyMedium, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp).clickable { photoPickerOpen = true })
+                Text(t(Tr.EDIT_CHANGE_PHOTO), color = ChocoColors.accent, fontFamily = ChocoFonts.bodyMedium, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp).clickable { photoPickerOpen = true })
             }
 
-            FieldLabel("Pseudo")
+            FieldLabel(t(Tr.EDIT_PSEUDO))
             EditTextField(pseudo, { pseudo = it })
 
-            FieldLabel("Date de naissance", topPadding = 16.dp)
+            FieldLabel(t(Tr.EDIT_BIRTHDATE), topPadding = 16.dp)
             DatePickerField(isoValue = dateBorn, onIsoValueChange = { dateBorn = it })
 
-            Text("MOT DE PASSE", color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 10.5.sp, letterSpacing = 1.1.sp, modifier = Modifier.padding(top = 26.dp, bottom = 11.dp))
-            FieldLabel("Mot de passe actuel")
-            EditTextField(currentPassword, { currentPassword = it }, placeholder = "Requis pour changer de mot de passe", isPassword = true)
-            FieldLabel("Nouveau mot de passe", topPadding = 16.dp)
-            EditTextField(newPassword, { newPassword = it }, placeholder = "Laisser vide pour ne pas changer", isPassword = true)
-            FieldLabel("Confirmer le nouveau mot de passe", topPadding = 16.dp)
+            Text(t(Tr.LOGIN_PASSWORD).uppercase(), color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 10.5.sp, letterSpacing = 1.1.sp, modifier = Modifier.padding(top = 26.dp, bottom = 11.dp))
+            FieldLabel(t(Tr.EDIT_CURRENT_PASSWORD))
+            EditTextField(currentPassword, { currentPassword = it }, placeholder = t(Tr.EDIT_CURRENT_PASSWORD_HINT), isPassword = true)
+            FieldLabel(t(Tr.EDIT_NEW_PASSWORD), topPadding = 16.dp)
+            EditTextField(newPassword, { newPassword = it }, placeholder = t(Tr.EDIT_NEW_PASSWORD_HINT), isPassword = true)
+            FieldLabel(t(Tr.EDIT_CONFIRM_PASSWORD), topPadding = 16.dp)
             EditTextField(confirmPassword, { confirmPassword = it }, placeholder = "••••••••", isPassword = true)
 
             if (error != null) {
@@ -192,13 +195,13 @@ fun EditProfileScreen() {
                 )
             }
 
-            PrimaryButton(label = "Enregistrer les modifications", onClick = ::save, loading = saving, height = 50.dp, modifier = Modifier.fillMaxWidth().padding(top = 24.dp))
+            PrimaryButton(label = t(Tr.EDIT_SAVE), onClick = ::save, loading = saving, height = 50.dp, modifier = Modifier.fillMaxWidth().padding(top = 24.dp))
         }
     }
 
     ChocoBottomSheet(visible = photoPickerOpen, onClose = { photoPickerOpen = false }, maxHeightPct = 0.6f, scrollable = false) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Text("Choisir une photo", color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 17.sp, modifier = Modifier.padding(bottom = 16.dp))
+            Text(t(Tr.EDIT_PICK_PHOTO), color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 17.sp, modifier = Modifier.padding(bottom = 16.dp))
             LazyVerticalGrid(
                 columns = GridCells.Fixed(4),
                 modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),

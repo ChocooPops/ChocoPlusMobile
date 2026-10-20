@@ -8,6 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.chocoplusmobile.api.ApiException
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.text
 
 /** Mirrors the RN app's hooks/useApiData.ts — every screen in the app
  * follows the same "loading / error / data" shape against the real API, so
@@ -34,7 +36,7 @@ fun <T> rememberApiData(key: Any?, fetcher: suspend () -> T): Pair<ApiData<T>, (
         try {
             state.data = fetcher()
         } catch (e: Exception) {
-            state.error = (e as? ApiException)?.message ?: e.message ?: "Erreur réseau"
+            state.error = (e as? ApiException)?.message ?: e.message ?: Tr.NETWORK_ERROR.text()
         } finally {
             state.loading = false
         }

@@ -91,6 +91,8 @@ import org.videolan.libvlc.MediaPlayer
 import androidx.mediarouter.app.MediaRouteChooserDialog
 import kotlinx.coroutines.delay
 import kotlin.math.roundToLong
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 /** How long the controls stay up after the last interaction before fading
  * out on their own, while playing — same convention as YouTube/Netflix/VLC
@@ -563,7 +565,7 @@ private fun PlayerContent(params: PlayerTarget, onSwitchEpisode: (PlayerTarget) 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(AppIcon.of("cast"), contentDescription = null, tint = ChocoColors.text, modifier = Modifier.size(52.dp))
                     Text(
-                        "Diffusion sur ${castController.deviceName ?: "l'appareil"}",
+                        t(Tr.PLAYER_CASTING_TO, castController.deviceName ?: t(Tr.PLAYER_CAST_DEVICE_FALLBACK)),
                         color = ChocoColors.text,
                         fontFamily = ChocoFonts.bodyBold,
                         fontSize = 14.sp,
@@ -612,7 +614,7 @@ private fun PlayerContent(params: PlayerTarget, onSwitchEpisode: (PlayerTarget) 
                 modifier = Modifier.background(Color(0x66000000), androidx.compose.foundation.shape.CircleShape).padding(20.dp),
             ) {
                 Icon(AppIcon.of(if (seekFlashSide < 0) "replay_10" else "forward_10"), contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
-                Text(if (seekFlashSide < 0) "-10s" else "+10s", color = Color.White, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
+                Text(t(if (seekFlashSide < 0) Tr.PLAYER_SEEK_BACK_SHORT else Tr.PLAYER_SEEK_FORWARD_SHORT), color = Color.White, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
             }
         }
 
@@ -628,7 +630,7 @@ private fun PlayerContent(params: PlayerTarget, onSwitchEpisode: (PlayerTarget) 
         if (errored || streamUrl == null) {
             Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 Icon(AppIcon.of("error_outline"), contentDescription = null, tint = ChocoColors.textMuted, modifier = Modifier.size(34.dp))
-                Text("Impossible de lire cette vidéo", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyMedium, fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp))
+                Text(t(Tr.PLAYER_CANNOT_PLAY), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyMedium, fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp))
             }
         }
 
@@ -660,14 +662,14 @@ private fun PlayerContent(params: PlayerTarget, onSwitchEpisode: (PlayerTarget) 
             AnimatedVisibility(visible = controlsVisible, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.fillMaxSize()) {
                 Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     Row(horizontalArrangement = Arrangement.spacedBy(34.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(AppIcon.of("replay_10"), contentDescription = "Reculer 10s", tint = ChocoColors.text, modifier = Modifier.size(38.dp).clickable { seekBy(-10f) })
+                        Icon(AppIcon.of("replay_10"), contentDescription = t(Tr.PLAYER_SEEK_BACK), tint = ChocoColors.text, modifier = Modifier.size(38.dp).clickable { seekBy(-10f) })
                         Box(
                             modifier = Modifier.size(76.dp).background(Color(0x29FFFFFF), androidx.compose.foundation.shape.CircleShape).clickable { showControls(); paused = !paused },
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(AppIcon.of(if (paused) "play_arrow" else "pause"), contentDescription = null, tint = ChocoColors.text, modifier = Modifier.size(44.dp))
                         }
-                        Icon(AppIcon.of("forward_10"), contentDescription = "Avancer 10s", tint = ChocoColors.text, modifier = Modifier.size(38.dp).clickable { seekBy(10f) })
+                        Icon(AppIcon.of("forward_10"), contentDescription = t(Tr.PLAYER_SEEK_FORWARD), tint = ChocoColors.text, modifier = Modifier.size(38.dp).clickable { seekBy(10f) })
                     }
                 }
             }
@@ -691,8 +693,8 @@ private fun PlayerContent(params: PlayerTarget, onSwitchEpisode: (PlayerTarget) 
             ) {
                 Icon(AppIcon.of("history_toggle_off"), contentDescription = null, tint = ChocoColors.accent, modifier = Modifier.size(22.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Reprise à ${hms(resumeSeconds)}", color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold, fontSize = 13.sp)
-                    Text("Position restaurée depuis ton historique", color = Color(0x80FFFFFF), fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp, modifier = Modifier.padding(top = 2.dp))
+                    Text(t(Tr.PLAYER_RESUMED_AT, hms(resumeSeconds)), color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold, fontSize = 13.sp)
+                    Text(t(Tr.PLAYER_RESUMED_DESC), color = Color(0x80FFFFFF), fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp, modifier = Modifier.padding(top = 2.dp))
                 }
                 Box(
                     modifier = Modifier
@@ -707,7 +709,7 @@ private fun PlayerContent(params: PlayerTarget, onSwitchEpisode: (PlayerTarget) 
                         .height(32.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("Reprendre à zéro", color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold, fontSize = 11.5.sp)
+                    Text(t(Tr.PLAYER_RESTART), color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold, fontSize = 11.5.sp)
                 }
             }
         }
@@ -740,15 +742,15 @@ private fun PlayerContent(params: PlayerTarget, onSwitchEpisode: (PlayerTarget) 
                     Text("-${hms((duration - displayedTime).toLong())}", color = Color(0x99FFFFFF), fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp)
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    PlayerActionButton(icon = "speed", label = "Vitesse ${SPEEDS[rateIndex]}×", onClick = { showControls(); rateIndex = (rateIndex + 1) % SPEEDS.size })
-                    PlayerActionButton(icon = "subtitles", label = "Pistes", onClick = { showControls(); tracksOpen = true })
+                    PlayerActionButton(icon = "speed", label = t(Tr.PLAYER_SPEED, SPEEDS[rateIndex].toString()), onClick = { showControls(); rateIndex = (rateIndex + 1) % SPEEDS.size })
+                    PlayerActionButton(icon = "subtitles", label = t(Tr.PLAYER_TRACKS), onClick = { showControls(); tracksOpen = true })
                     if (params is PlayerTarget.EpisodeTarget) {
-                        PlayerActionButton(icon = "video_library", label = "Épisodes", onClick = { showControls(); episodesSheetOpen = true })
+                        PlayerActionButton(icon = "video_library", label = t(Tr.EPISODES), onClick = { showControls(); episodesSheetOpen = true })
                     }
                     if (castController.isAvailable) {
-                        PlayerActionButton(icon = "cast", label = "Diffuser", onClick = { showControls(); openCastPicker() })
+                        PlayerActionButton(icon = "cast", label = t(Tr.PLAYER_CAST), onClick = { showControls(); openCastPicker() })
                     }
-                    PlayerActionButton(icon = "aspect_ratio", label = "Cadrage", onClick = { showControls(); resizeContain = !resizeContain })
+                    PlayerActionButton(icon = "aspect_ratio", label = t(Tr.PLAYER_ASPECT), onClick = { showControls(); resizeContain = !resizeContain })
                 }
             }
         }
@@ -757,15 +759,15 @@ private fun PlayerContent(params: PlayerTarget, onSwitchEpisode: (PlayerTarget) 
     ChocoBottomSheet(visible = tracksOpen, onClose = { tracksOpen = false }, maxHeightPct = 0.6f) {
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             TrackGroup(
-                label = "AUDIO",
+                label = t(Tr.PLAYER_AUDIO).uppercase(),
                 tracks = audioTracks.map { it.id to it.name },
                 selectedId = currentAudioTrack,
                 onSelect = { id -> mediaPlayer.setAudioTrack(id); currentAudioTrack = id; recordAudioSubtitleChoice(id, currentSubTrack) },
                 modifier = Modifier.weight(1f),
             )
             TrackGroup(
-                label = "SOUS-TITRES",
-                tracks = listOf(NO_SUBTITLES_TRACK_ID to "Aucun") + subTracks.map { it.id to it.name },
+                label = t(Tr.PLAYER_SUBTITLES).uppercase(),
+                tracks = listOf(NO_SUBTITLES_TRACK_ID to t(Tr.PLAYER_SUBTITLES_NONE)) + subTracks.map { it.id to it.name },
                 selectedId = currentSubTrack,
                 onSelect = { id -> mediaPlayer.setSpuTrack(id); currentSubTrack = id; recordAudioSubtitleChoice(currentAudioTrack, id) },
                 modifier = Modifier.weight(1f),
@@ -775,12 +777,12 @@ private fun PlayerContent(params: PlayerTarget, onSwitchEpisode: (PlayerTarget) 
 
     if (params is PlayerTarget.EpisodeTarget) {
         ChocoBottomSheet(visible = episodesSheetOpen, onClose = { episodesSheetOpen = false }, maxHeightPct = 0.75f) {
-            Text("ÉPISODES", color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 10.5.sp, letterSpacing = 1.1.sp, modifier = Modifier.padding(bottom = 14.dp))
+            Text(t(Tr.EPISODES).uppercase(), color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 10.5.sp, letterSpacing = 1.1.sp, modifier = Modifier.padding(bottom = 14.dp))
             if (seasons.size > 1) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.padding(bottom = 14.dp)) {
                     items(seasons.size) { idx ->
                         val s = seasons[idx]
-                        ChocoChip(label = s.name.ifBlank { "Saison ${s.seasonNumber}" }, active = s.id == selectedSeasonId, onClick = { selectedSeasonId = s.id }, small = true)
+                        ChocoChip(label = s.name.ifBlank { t(Tr.SEASON_N, s.seasonNumber) }, active = s.id == selectedSeasonId, onClick = { selectedSeasonId = s.id }, small = true)
                     }
                 }
             }
@@ -853,7 +855,7 @@ private fun PlayerEpisodeRow(episode: Episode, playing: Boolean, downloaded: Boo
     ) {
         Box(modifier = Modifier.width(26.dp).padding(top = 14.dp), contentAlignment = Alignment.Center) {
             if (playing) {
-                Icon(AppIcon.of("play_arrow"), contentDescription = "En cours de lecture", tint = ChocoColors.accent, modifier = Modifier.size(18.dp))
+                Icon(AppIcon.of("play_arrow"), contentDescription = t(Tr.PLAYER_NOW_PLAYING), tint = ChocoColors.accent, modifier = Modifier.size(18.dp))
             } else {
                 Text("${eUi.number}", color = ChocoColors.textFaint, fontFamily = ChocoFonts.headingExtraBold, fontSize = 16.sp)
             }
@@ -867,7 +869,7 @@ private fun PlayerEpisodeRow(episode: Episode, playing: Boolean, downloaded: Boo
             if (downloaded) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 4.dp)) {
                     Icon(AppIcon.of("download_done"), contentDescription = null, tint = ChocoColors.accent, modifier = Modifier.size(13.dp))
-                    Text("Téléchargé", color = ChocoColors.accent, fontFamily = ChocoFonts.bodySemiBold, fontSize = 10.sp)
+                    Text(t(Tr.DOWNLOAD_DONE), color = ChocoColors.accent, fontFamily = ChocoFonts.bodySemiBold, fontSize = 10.sp)
                 }
             }
         }

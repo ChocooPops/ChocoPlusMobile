@@ -40,24 +40,26 @@ import com.chocoplusmobile.ui.components.TopBar
 import com.chocoplusmobile.ui.icons.AppIcon
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
-private data class MenuItem(val icon: String, val label: String, val desc: String, val route: String)
+private data class MenuItem(val icon: String, val label: Tr, val desc: Tr, val route: String)
 
 private val MENU = listOf(
-    MenuItem("history", "Historique", "Tes visionnages, filtrables par date", "history"),
-    MenuItem("bar_chart", "Statistiques", "Heures, catégories, rythme", "stats"),
-    MenuItem("manage_accounts", "Gérer le profil", "Pseudo, photo, mot de passe", "editProfile"),
-    MenuItem("menu_book", "Documentation", "Guides et FAQ intégrés", "documentation"),
-    MenuItem("bug_report", "Support", "Signaler un bug à l'équipe", "support"),
-    MenuItem("settings", "Paramètres", "Affichage, démarrage, lecture", "settings"),
+    MenuItem("history", Tr.PROFILE_HISTORY, Tr.PROFILE_HISTORY_DESC, "history"),
+    MenuItem("bar_chart", Tr.PROFILE_STATS, Tr.PROFILE_STATS_DESC, "stats"),
+    MenuItem("manage_accounts", Tr.PROFILE_MANAGE, Tr.PROFILE_MANAGE_DESC, "editProfile"),
+    MenuItem("menu_book", Tr.PROFILE_DOCUMENTATION, Tr.PROFILE_DOCUMENTATION_DESC, "documentation"),
+    MenuItem("bug_report", Tr.PROFILE_SUPPORT, Tr.PROFILE_SUPPORT_DESC, "support"),
+    MenuItem("settings", Tr.SETTINGS_TITLE, Tr.PROFILE_SETTINGS_DESC, "settings"),
 )
 
 // Only shown to ADMIN accounts — appended to MENU below rather than baked
 // in, since every other entry is unconditional.
-private val ADMIN_MENU_ITEM = MenuItem("verified_user", "Administration", "Gérer les comptes utilisateurs", "adminUsers")
+private val ADMIN_MENU_ITEM = MenuItem("verified_user", Tr.PROFILE_ADMIN, Tr.PROFILE_ADMIN_DESC, "adminUsers")
 
 // ADMIN/FAMILY only, same as every other download entry point.
-private val DOWNLOADS_MENU_ITEM = MenuItem("download_for_offline", "Téléchargements", "Films et épisodes disponibles hors ligne", "downloads")
+private val DOWNLOADS_MENU_ITEM = MenuItem("download_for_offline", Tr.PAGE_DOWNLOADS, Tr.PROFILE_DOWNLOADS_DESC, "downloads")
 
 /** Mirrors the RN app's screens/Profile/ProfileScreen.tsx. */
 @Composable
@@ -81,9 +83,9 @@ fun ProfileScreen() {
     }
 
     val kpis = listOf(
-        Triple(watchTime?.total?.contentCount?.toString() ?: "—", "titres vus", null as ImageVector?),
-        Triple(watchTime?.let { "${it.total.totalHours} h" } ?: "—", "de visionnage", null),
-        Triple(myListIds.size.toString(), "dans ma liste", null),
+        Triple(watchTime?.total?.contentCount?.toString() ?: "—", t(Tr.PROFILE_KPI_WATCHED), null as ImageVector?),
+        Triple(watchTime?.let { t(Tr.PROFILE_KPI_HOURS_VALUE, it.total.totalHours) } ?: "—", t(Tr.PROFILE_KPI_HOURS), null),
+        Triple(myListIds.size.toString(), t(Tr.PROFILE_KPI_MYLIST), null),
     )
 
     Column(modifier = Modifier.fillMaxSize().background(ChocoColors.bg)) {
@@ -138,8 +140,8 @@ fun ProfileScreen() {
                     ) {
                         Icon(AppIcon.of(item.icon), contentDescription = null, tint = ChocoColors.accent, modifier = Modifier.size(21.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(item.label, color = ChocoColors.text, fontFamily = ChocoFonts.bodySemiBold, fontSize = 14.sp)
-                            Text(item.desc, color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp, modifier = Modifier.padding(top = 2.dp))
+                            Text(t(item.label), color = ChocoColors.text, fontFamily = ChocoFonts.bodySemiBold, fontSize = 14.sp)
+                            Text(t(item.desc), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp, modifier = Modifier.padding(top = 2.dp))
                         }
                         Icon(AppIcon.of("chevron_right"), contentDescription = null, tint = ChocoColors.textDisabled, modifier = Modifier.size(20.dp))
                     }
@@ -149,7 +151,7 @@ fun ProfileScreen() {
                 }
             }
 
-            PrimaryButton(label = "Se déconnecter", variant = ButtonVariant.OUTLINE, onClick = { appViewModel.logout() }, height = 46.dp, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
+            PrimaryButton(label = t(Tr.LOG_OUT), variant = ButtonVariant.OUTLINE, onClick = { appViewModel.logout() }, height = 46.dp, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
             Text("ChocoPlus", color = ChocoColors.textDisabled, fontFamily = ChocoFonts.bodyRegular, fontSize = 10.5.sp, modifier = Modifier.fillMaxWidth().padding(top = 14.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }

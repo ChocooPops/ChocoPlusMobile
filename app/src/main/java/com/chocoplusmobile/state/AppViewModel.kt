@@ -34,6 +34,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.text
 
 /**
  * Mirrors the RN app's state/AppStateContext.tsx — the one shared source of
@@ -227,8 +229,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 // the usual error. A 401/403 still gets the usual message.
                 val unavailable = e.isServerUnavailable()
                 if (unavailable) markServerUnavailable()
-                val message = if (unavailable) "Le serveur est injoignable pour le moment."
-                else (e as? ApiException)?.message ?: "Connexion impossible"
+                val message = if (unavailable) Tr.LOGIN_ERROR_SERVER_UNREACHABLE.text()
+                else (e as? ApiException)?.message ?: Tr.LOGIN_ERROR_GENERIC.text()
                 _authError.value = message
                 onError(message)
             }

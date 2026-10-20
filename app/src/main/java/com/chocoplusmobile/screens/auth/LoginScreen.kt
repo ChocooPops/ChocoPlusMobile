@@ -43,6 +43,8 @@ import com.chocoplusmobile.ui.components.PrimaryButton
 import com.chocoplusmobile.ui.icons.AppIcon
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 /** Mirrors the RN app's screens/Auth/LoginScreen.tsx. */
 @Composable
@@ -90,7 +92,7 @@ fun LoginScreen() {
         }
 
         Text(
-            "S'identifier",
+            t(Tr.LOGIN_TITLE),
             color = ChocoColors.text,
             fontFamily = ChocoFonts.headingExtraBold,
             fontSize = 25.sp,
@@ -103,7 +105,7 @@ fun LoginScreen() {
                 icon = "mail",
                 value = email,
                 onValueChange = { email = it },
-                placeholder = "Adresse e-mail",
+                placeholder = t(Tr.LOGIN_EMAIL),
                 keyboardType = KeyboardType.Email,
                 enabled = !loading,
             )
@@ -112,7 +114,7 @@ fun LoginScreen() {
                 value = password,
                 // Typing again always masks it back, even if it was shown.
                 onValueChange = { password = it; hidden = true },
-                placeholder = "Mot de passe",
+                placeholder = t(Tr.LOGIN_PASSWORD),
                 // Password (even while shown in clear): no keyboard
                 // suggestions or learning of what's typed here.
                 keyboardType = KeyboardType.Password,
@@ -152,15 +154,15 @@ fun LoginScreen() {
             }
         }
 
-        PrimaryButton(label = "Entrer", onClick = ::submit, loading = loading, enabled = canSubmit, height = 52.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
+        PrimaryButton(label = t(Tr.LOGIN_SUBMIT), onClick = ::submit, loading = loading, enabled = canSubmit, height = 52.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
 
         Row(modifier = Modifier.fillMaxWidth().padding(top = 24.dp), horizontalArrangement = Arrangement.spacedBy(
             6.dp,
             Alignment.CenterHorizontally)
         ) {
-            Text("Pas encore de compte ? ", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.5.sp)
+            Text(t(Tr.LOGIN_NO_ACCOUNT), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.5.sp)
             Text(
-                "Créer un compte",
+                t(Tr.CREATE_ACCOUNT),
                 color = ChocoColors.accent,
                 fontFamily = ChocoFonts.bodyBold,
                 fontSize = 12.5.sp,
@@ -186,10 +188,10 @@ private fun ServerUnavailableBanner(hasDownloads: Boolean, checking: Boolean, on
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             androidx.compose.material3.Icon(AppIcon.of("wifi_off"), contentDescription = null, tint = ChocoColors.danger, modifier = Modifier.size(17.dp))
             Text(
-                "Serveur injoignable pour le moment." +
+                t(Tr.LOGIN_SERVER_UNREACHABLE) +
                     // A wrong URL looks exactly like a server that's down.
-                    " La configuration du serveur peut aussi être en cause : vérifie l'URL et le header de sécurité via l'engrenage en haut à droite." +
-                    if (hasDownloads) " Tes téléchargements restent disponibles hors ligne." else " Sinon, réessaie dans quelques instants.",
+                    t(Tr.LOGIN_SERVER_CONFIG_HINT) +
+                    t(if (hasDownloads) Tr.LOGIN_DOWNLOADS_STILL_AVAILABLE else Tr.LOGIN_RETRY_LATER),
                 color = androidx.compose.ui.graphics.Color(0xFFFF9C9C),
                 fontFamily = ChocoFonts.bodyMedium,
                 fontSize = 12.5.sp,
@@ -198,7 +200,7 @@ private fun ServerUnavailableBanner(hasDownloads: Boolean, checking: Boolean, on
         }
         if (hasDownloads) {
             PrimaryButton(
-                label = "Accéder aux téléchargements",
+                label = t(Tr.LOGIN_OPEN_DOWNLOADS),
                 icon = AppIcon.of("download_for_offline"),
                 onClick = onOpenDownloads,
                 height = 44.dp,
@@ -206,7 +208,7 @@ private fun ServerUnavailableBanner(hasDownloads: Boolean, checking: Boolean, on
             )
         }
         PrimaryButton(
-            label = "Réessayer",
+            label = t(Tr.RETRY),
             icon = AppIcon.of("refresh"),
             variant = ButtonVariant.OUTLINE,
             loading = checking,

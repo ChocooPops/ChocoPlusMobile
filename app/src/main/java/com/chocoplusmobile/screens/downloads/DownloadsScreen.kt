@@ -63,6 +63,9 @@ import com.chocoplusmobile.ui.components.formatBytes
 import com.chocoplusmobile.ui.icons.AppIcon
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.tCount
 
 /** One title on the Downloads screen: a movie, or a series with however
  * many of its episodes are downloaded (or downloading). */
@@ -147,7 +150,7 @@ fun DownloadsScreen() {
         )
         Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 16.dp, bottom = com.chocoplusmobile.ui.components.TAB_BAR_CLEARANCE)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Téléchargements", color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 24.sp, letterSpacing = (-0.6).sp)
+                Text(t(Tr.PAGE_DOWNLOADS), color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 24.sp, letterSpacing = (-0.6).sp)
                 if (entries.isNotEmpty()) {
                     Row(
                         modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { confirmDeleteAll = true }.padding(horizontal = 8.dp, vertical = 6.dp),
@@ -155,12 +158,12 @@ fun DownloadsScreen() {
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
                         Icon(AppIcon.of("delete_outline"), contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(18.dp))
-                        Text("Tout supprimer", color = Color(0xFFFF6B6B), fontFamily = ChocoFonts.bodyBold, fontSize = 12.sp)
+                        Text(t(Tr.DOWNLOADS_DELETE_ALL), color = Color(0xFFFF6B6B), fontFamily = ChocoFonts.bodyBold, fontSize = 12.sp)
                     }
                 }
             }
             Text(
-                "${titles.size} titre${if (titles.size > 1) "s" else ""}" + (if (totalBytes > 0) " · ${formatBytes(totalBytes)}" else "") + " · disponible hors ligne",
+                listOfNotNull(tCount(Tr.TITLES_COUNT_ONE, Tr.TITLES_COUNT_MANY, titles.size), totalBytes.takeIf { it > 0 }?.let(::formatBytes), t(Tr.DOWNLOADS_AVAILABLE_OFFLINE)).joinToString(" · "),
                 color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp),
             )
 
@@ -174,9 +177,9 @@ fun DownloadsScreen() {
             if (titles.isEmpty()) {
                 EmptyState(
                     icon = AppIcon.of("download_for_offline"),
-                    title = "Aucun téléchargement",
-                    description = "Télécharge un film ou des épisodes depuis leur fiche pour les regarder sans connexion.",
-                    ctaLabel = if (offline) null else "Parcourir le catalogue",
+                    title = t(Tr.DOWNLOADS_EMPTY_TITLE),
+                    description = t(Tr.DOWNLOADS_EMPTY_DESC),
+                    ctaLabel = if (offline) null else t(Tr.DOWNLOADS_BROWSE_CATALOGUE),
                     onPressCta = if (offline) null else ({ navController.navigate("catalogue") }),
                 )
             }
@@ -188,12 +191,14 @@ fun DownloadsScreen() {
         AlertDialog(
             onDismissRequest = { confirmDeleteAll = false },
             containerColor = ChocoColors.surfaceAlt,
-            title = { Text("Tout supprimer ?", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 17.sp) },
+            title = { Text(t(Tr.DOWNLOADS_DELETE_ALL_CONFIRM), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 17.sp) },
             text = {
                 Text(
-                    "Les ${titles.size} titre${if (titles.size > 1) "s" else ""} téléchargé${if (titles.size > 1) "s" else ""} ne seront plus disponibles hors ligne" +
-                        (if (totalBytes > 0) " (${formatBytes(totalBytes)} libérés)" else "") + "." +
-                        (if (activeCount > 0) " Les $activeCount téléchargement${if (activeCount > 1) "s" else ""} en cours ser${if (activeCount > 1) "ont" else "a"} annulé${if (activeCount > 1) "s" else ""}." else ""),
+                    listOfNotNull(
+                        tCount(Tr.DOWNLOADS_DELETE_ALL_TITLES_ONE, Tr.DOWNLOADS_DELETE_ALL_TITLES_MANY, titles.size),
+                        totalBytes.takeIf { it > 0 }?.let { t(Tr.DOWNLOADS_SPACE_FREED, formatBytes(it)) },
+                        activeCount.takeIf { it > 0 }?.let { tCount(Tr.DOWNLOADS_DELETE_ALL_ACTIVE_ONE, Tr.DOWNLOADS_DELETE_ALL_ACTIVE_MANY, it) },
+                    ).joinToString(" "),
                     color = Color(0xB3FFFFFF), fontFamily = ChocoFonts.bodyRegular, fontSize = 13.sp,
                 )
             },
@@ -203,12 +208,12 @@ fun DownloadsScreen() {
                     DownloadManager.removeAll()
                     confirmDeleteAll = false
                 }) {
-                    Text("Tout supprimer", color = Color(0xFFFF6B6B), fontFamily = ChocoFonts.bodyBold)
+                    Text(t(Tr.DOWNLOADS_DELETE_ALL), color = Color(0xFFFF6B6B), fontFamily = ChocoFonts.bodyBold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { confirmDeleteAll = false }) {
-                    Text("Annuler", color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold)
+                    Text(t(Tr.CANCEL), color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold)
                 }
             },
         )
@@ -230,10 +235,10 @@ private fun OfflineSessionHeader(onExit: () -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(AppIcon.of("wifi_off"), contentDescription = null, tint = ChocoColors.accent, modifier = Modifier.size(20.dp))
-            Text("Hors ligne", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 15.sp)
+            Text(t(Tr.OFFLINE_MODE), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 15.sp)
         }
         Text(
-            "Se connecter",
+            t(Tr.SIGN_IN),
             color = ChocoColors.accent,
             fontFamily = ChocoFonts.bodyBold,
             fontSize = 13.sp,
@@ -251,7 +256,7 @@ private fun DownloadedTitleSheet(title: DownloadedTitle, onPlay: (DownloadEntry)
             val entry = title.entries.first()
             val progress = localProgress.movie(title.media.id) ?: title.media.watchProgress
             DownloadedVideoRow(
-                label = "Film",
+                label = t(Tr.MOVIE),
                 meta = Adapters.mapMediaToUi(title.media).duration,
                 imageUri = Adapters.backdropUri(title.media),
                 entry = entry,
@@ -276,7 +281,7 @@ private fun DownloadedTitleSheet(title: DownloadedTitle, onPlay: (DownloadEntry)
                     items(bySeason.size) { idx ->
                         val (seasonId, list) = bySeason[idx]
                         val season = seasons.firstOrNull { it.id == seasonId }
-                        val label = season?.let { "S${it.seasonNumber}" } ?: "Saison ${idx + 1}"
+                        val label = season?.let { "S${it.seasonNumber}" } ?: t(Tr.SEASON_N, idx + 1)
                         ChocoChip(label = "$label · ${list.size}", active = seasonId == current?.first, onClick = { selectedSeasonId = seasonId }, small = true)
                     }
                 }
@@ -284,14 +289,14 @@ private fun DownloadedTitleSheet(title: DownloadedTitle, onPlay: (DownloadEntry)
             current?.let { (seasonId, list) ->
                 val season = seasons.firstOrNull { it.id == seasonId }
                 Text(
-                    (season?.name?.ifBlank { null } ?: season?.let { "Saison ${it.seasonNumber}" } ?: "Épisodes").uppercase(),
+                    (season?.name?.ifBlank { null } ?: season?.let { t(Tr.SEASON_N, it.seasonNumber) } ?: t(Tr.EPISODES)).uppercase(),
                     color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 10.5.sp, letterSpacing = 1.1.sp,
                     modifier = Modifier.padding(top = 16.dp, bottom = 2.dp),
                 )
                 list.sortedBy { it.episode?.episodeNumber ?: 0 }.forEach { entry ->
                     val ep = entry.episode
                     DownloadedVideoRow(
-                        label = ep?.let { "${it.episodeNumber}. ${it.name}" } ?: "Épisode",
+                        label = ep?.let { "${it.episodeNumber}. ${it.name}" } ?: t(Tr.EPISODE),
                         meta = ep?.let { Adapters.mapEpisodeToUi(it).duration },
                         imageUri = ep?.let { Adapters.episodePosterUri(it) },
                         entry = entry,
@@ -320,7 +325,7 @@ private fun DownloadedVideoRow(label: String, meta: String?, imageUri: String?, 
                 if (ready) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Box(modifier = Modifier.size(32.dp).background(Color(0x99000000), CircleShape), contentAlignment = Alignment.Center) {
-                            Icon(AppIcon.of("play_arrow"), contentDescription = "Lire", tint = Color.White, modifier = Modifier.size(20.dp))
+                            Icon(AppIcon.of("play_arrow"), contentDescription = t(Tr.PLAY), tint = Color.White, modifier = Modifier.size(20.dp))
                         }
                     }
                 }
@@ -330,10 +335,10 @@ private fun DownloadedVideoRow(label: String, meta: String?, imageUri: String?, 
             Text(label, color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 13.sp, lineHeight = 16.sp, maxLines = 2)
             val status = when (entry.status) {
                 DownloadStatus.COMPLETED -> listOfNotNull(meta?.ifBlank { null }, entry.totalBytes.takeIf { it > 0 }?.let(::formatBytes)).joinToString(" · ")
-                DownloadStatus.QUEUED -> "En attente…"
-                DownloadStatus.DOWNLOADING -> entry.progressPercent?.let { "Téléchargement… $it %" } ?: "Téléchargement…"
-                DownloadStatus.FAILED -> "Échec du téléchargement"
-                DownloadStatus.PAUSED -> entry.progressPercent?.let { "En pause · $it %" } ?: "En pause"
+                DownloadStatus.QUEUED -> t(Tr.DOWNLOAD_STATUS_QUEUED)
+                DownloadStatus.DOWNLOADING -> entry.progressPercent?.let { t(Tr.DOWNLOAD_STATUS_DOWNLOADING_PERCENT, it) } ?: t(Tr.DOWNLOAD_STATUS_DOWNLOADING)
+                DownloadStatus.FAILED -> t(Tr.DOWNLOAD_STATUS_FAILED)
+                DownloadStatus.PAUSED -> entry.progressPercent?.let { t(Tr.DOWNLOAD_STATUS_PAUSED_PERCENT, it) } ?: t(Tr.DOWNLOAD_STATUS_PAUSED)
             }
             if (status.isNotEmpty()) {
                 Text(

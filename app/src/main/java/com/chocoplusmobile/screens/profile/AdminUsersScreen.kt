@@ -50,6 +50,10 @@ import com.chocoplusmobile.ui.icons.AppIcon
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
+import com.chocoplusmobile.i18n.tCount
 
 /** background/foreground pair for a role badge — a soft tint of the same
  * solid color behind text drawn in that solid color, same recipe as
@@ -91,7 +95,7 @@ fun AdminUsersScreen() {
         try {
             users = NetworkModule.safeCall { NetworkModule.api.getAllUsers() }
         } catch (e: Exception) {
-            error = e.message ?: "Erreur réseau"
+            error = e.message ?: Tr.NETWORK_ERROR.text()
         } finally {
             loading = false
         }
@@ -104,9 +108,9 @@ fun AdminUsersScreen() {
             actionStatus = try {
                 val result = NetworkModule.safeCall { NetworkModule.api.updateUserRoleByAdmin(user.id, UpdateUserRolePayload(role)) }
                 if (result.state) users = users.map { if (it.id == user.id) it.copy(role = role) else it }
-                ActionStatus.Done(result.message.ifBlank { "Rôle mis à jour." }, result.state)
+                ActionStatus.Done(result.message.ifBlank { Tr.ADMIN_ROLE_UPDATED.text() }, result.state)
             } catch (e: Exception) {
-                ActionStatus.Done(e.message ?: "Impossible de changer le rôle.", success = false)
+                ActionStatus.Done(e.message ?: Tr.ADMIN_ROLE_FAILED.text(), success = false)
             }
         }
     }
@@ -118,17 +122,17 @@ fun AdminUsersScreen() {
             actionStatus = try {
                 val result = NetworkModule.safeCall { NetworkModule.api.deleteUserByAdmin(user.id) }
                 if (result.state) users = users.filter { it.id != user.id }
-                ActionStatus.Done(result.message.ifBlank { "Utilisateur supprimé." }, result.state)
+                ActionStatus.Done(result.message.ifBlank { Tr.ADMIN_USER_DELETED.text() }, result.state)
             } catch (e: Exception) {
-                ActionStatus.Done(e.message ?: "Suppression impossible.", success = false)
+                ActionStatus.Done(e.message ?: Tr.ADMIN_DELETE_FAILED.text(), success = false)
             }
         }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(ChocoColors.bg).padding(top = 50.dp).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(top = 16.dp, bottom = com.chocoplusmobile.ui.components.TAB_BAR_CLEARANCE)) {
-        ScreenHeaderBack(title = "Administration", onBack = { navController.popBackStack() })
+        ScreenHeaderBack(title = t(Tr.PROFILE_ADMIN), onBack = { navController.popBackStack() })
         Text(
-            "${users.size} compte${if (users.size > 1) "s" else ""} — touche un utilisateur pour changer son rôle.",
+            tCount(Tr.ADMIN_ACCOUNTS_ONE, Tr.ADMIN_ACCOUNTS_MANY, users.size),
             color = ChocoColors.textMuted,
             fontFamily = ChocoFonts.bodyRegular,
             fontSize = 12.sp,
@@ -162,7 +166,7 @@ fun AdminUsersScreen() {
         if (u != null) {
             Text(u.pseudo, color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 18.sp)
             Text(u.email, color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp, bottom = 18.dp))
-            Text("RÔLE", color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 10.5.sp, letterSpacing = 1.1.sp, modifier = Modifier.padding(bottom = 10.dp))
+            Text(t(Tr.ADMIN_ROLE).uppercase(), color = ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 10.5.sp, letterSpacing = 1.1.sp, modifier = Modifier.padding(bottom = 10.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Role.entries.forEach { r ->
                     RoleChip(role = r, active = u.role == r, onClick = { if (u.role != r) changeRole(u, r) })
@@ -175,10 +179,10 @@ fun AdminUsersScreen() {
         val u = deleteTarget!!
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Supprimer ${u.pseudo} ?") },
-            text = { Text("Cette action est définitive : son compte, sa liste et son historique seront supprimés.") },
-            confirmButton = { TextButton(onClick = { deleteUser(u) }) { Text("Supprimer", color = ChocoColors.danger) } },
-            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Annuler") } },
+            title = { Text(t(Tr.ADMIN_DELETE_CONFIRM, u.pseudo)) },
+            text = { Text(t(Tr.ADMIN_DELETE_DESC)) },
+            confirmButton = { TextButton(onClick = { deleteUser(u) }) { Text(t(Tr.DELETE), color = ChocoColors.danger) } },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(t(Tr.CANCEL)) } },
         )
     }
 
@@ -233,7 +237,7 @@ private fun AdminUserRow(user: User, onClick: () -> Unit, onDelete: () -> Unit) 
         }
         Icon(
             AppIcon.of("delete_outline"),
-            contentDescription = "Supprimer",
+            contentDescription = t(Tr.DELETE),
             tint = ChocoColors.danger,
             modifier = Modifier.size(22.dp).clickable(onClick = onDelete),
         )

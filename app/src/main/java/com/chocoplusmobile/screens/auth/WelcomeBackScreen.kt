@@ -43,6 +43,8 @@ import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 /**
  * Shown once per cold app launch when a stored token got silently restored
@@ -77,7 +79,7 @@ fun WelcomeBackScreen() {
         }
     }
 
-    val greeting = "Bienvenue ${(user?.pseudo ?: user?.firstName ?: "").replaceFirstChar { it.uppercase() }}"
+    val greeting = t(Tr.WELCOME_GREETING, (user?.pseudo ?: user?.firstName ?: "").replaceFirstChar { it.uppercase() })
 
     if (isLandscape) {
         // The portrait layout below stacks logo → text → a big 150dp avatar
@@ -122,7 +124,7 @@ fun WelcomeBackScreen() {
                     if (loading) CircularProgressIndicator(color = ChocoColors.accent)
                 }
                 PrimaryButton(
-                    label = "Se déconnecter",
+                    label = t(Tr.LOG_OUT),
                     variant = ButtonVariant.OUTLINE,
                     onClick = { appViewModel.logout() },
                     enabled = !loading,
@@ -167,7 +169,7 @@ fun WelcomeBackScreen() {
                 }
 
                 PrimaryButton(
-                    label = "Se déconnecter",
+                    label = t(Tr.LOG_OUT),
                     variant = ButtonVariant.OUTLINE,
                     onClick = { appViewModel.logout() },
                     enabled = !loading,

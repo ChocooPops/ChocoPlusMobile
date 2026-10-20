@@ -13,6 +13,8 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Locale
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.text
 
 /** Mirrors the RN app's api/adapters.ts one-for-one — maps the real API
  * responses (api/Types.kt) into the UI-facing view-models above. */
@@ -130,7 +132,7 @@ object Adapters {
         val totalMinutes = Math.round(durationMs / 60000.0)
         val h = totalMinutes / 60
         val m = totalMinutes % 60
-        return if (h > 0) "${h}h ${m.toString().padStart(2, '0')}min" else "${m}min"
+        return if (h > 0) Tr.DURATION_HM.text(h, m.toString().padStart(2, '0')) else Tr.DURATION_M.text(m)
     }
 
     /** Maps a base Media, a Movie, or a Series (all share the one Media
@@ -179,9 +181,9 @@ object Adapters {
     }
 
     private fun humanizeStateProgress(state: StatState): String = when (state) {
-        StatState.NOT_WATCHED -> "Non regardé"
-        StatState.IN_PROGRESS -> "En cours"
-        StatState.FINISHED -> "Terminé"
+        StatState.NOT_WATCHED -> Tr.WATCH_NOT_WATCHED.text()
+        StatState.IN_PROGRESS -> Tr.WATCH_IN_PROGRESS.text()
+        StatState.FINISHED -> Tr.WATCH_FINISHED.text()
     }
 
     /** Fields common to GET /movie/:id and /series/:id — MediaMetadataSheet's
@@ -193,51 +195,52 @@ object Adapters {
      * duplicate the same data in a worse format. */
     private fun baseMetadataRows(media: Media): MutableList<MetadataRow> {
         val rows = mutableListOf(
-            MetadataRow("Titre", media.title),
-            MetadataRow("Identifiant", media.mediaLibraryId),
+            MetadataRow(Tr.TITLE_LABEL.text(), media.title),
+            MetadataRow(Tr.META_ID.text(), media.mediaLibraryId),
         )
         if (media.categories.isNotEmpty()) {
-            rows += MetadataRow("Catégories", media.categories.joinToString(", ") { humanizeKey(it.translationKey) })
+            rows += MetadataRow(Tr.META_CATEGORIES.text(), media.categories.joinToString(", ") { humanizeKey(it.translationKey) })
         }
         if (media.keyWord.isNotEmpty()) {
-            rows += MetadataRow("Mots-clés", media.keyWord.joinToString(", "))
+            rows += MetadataRow(Tr.DETAIL_KEYWORDS.text(), media.keyWord.joinToString(", "))
         }
         if (media.description.isNotEmpty()) {
-            rows += MetadataRow("Synopsis", media.description)
+            rows += MetadataRow(Tr.META_SYNOPSIS.text(), media.description)
         }
-        if (media.date.isNotBlank()) rows += MetadataRow("Date de sortie", media.date)
-        media.startShow?.let { rows += MetadataRow("Début de diffusion", it) }
-        media.endShow?.let { rows += MetadataRow("Fin de diffusion", it) }
-        media.path?.takeIf { it.isNotBlank() }?.let { rows += MetadataRow("Chemin", it) }
+        if (media.date.isNotBlank()) rows += MetadataRow(Tr.META_RELEASE_DATE.text(), media.date)
+        media.startShow?.let { rows += MetadataRow(Tr.META_AIR_START.text(), it) }
+        media.endShow?.let { rows += MetadataRow(Tr.META_AIR_END.text(), it) }
+        media.path?.takeIf { it.isNotBlank() }?.let { rows += MetadataRow(Tr.META_PATH.text(), it) }
         return rows
     }
 
     fun movieMetadataRows(movie: Media): List<MetadataRow> {
         val rows = baseMetadataRows(movie)
-        movie.resolution?.let { rows += MetadataRow("Résolution", it) }
-        formatDuration(movie.duration)?.let { rows += MetadataRow("Durée", it) }
+        movie.resolution?.let { rows += MetadataRow(Tr.META_RESOLUTION.text(), it) }
+        formatDuration(movie.duration)?.let { rows += MetadataRow(Tr.META_DURATION.text(), it) }
         if ((movie.watchProgress ?: 0.0) > 0) {
-            rows += MetadataRow("Progression", "${movie.watchProgress!!.toInt()} %")
+            rows += MetadataRow(Tr.META_PROGRESS.text(), Tr.PERCENT.text(movie.watchProgress!!.toInt()))
         }
-        movie.stateProgress?.let { rows += MetadataRow("Statut de visionnage", humanizeStateProgress(it)) }
+        movie.stateProgress?.let { rows += MetadataRow(Tr.META_WATCH_STATUS.text(), humanizeStateProgress(it)) }
         return rows
     }
 
     fun seriesMetadataRows(series: Media): List<MetadataRow> {
         val rows = baseMetadataRows(series)
-        series.seasons?.let { if (it.isNotEmpty()) rows += MetadataRow("Saisons", it.size.toString()) }
+        series.seasons?.let { if (it.isNotEmpty()) rows += MetadataRow(Tr.META_SEASONS.text(), it.size.toString()) }
         if ((series.lastSeasonWatched ?: 0) > 0) {
-            rows += MetadataRow("Dernière saison vue", series.lastSeasonWatched.toString())
+            rows += MetadataRow(Tr.META_LAST_SEASON.text(), series.lastSeasonWatched.toString())
         }
         return rows
     }
 
-    private val airDateFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRENCH)
+    // Built per call: follows the app language (pattern and month names).
+    private fun airDateFormatter() = DateTimeFormatter.ofPattern(Tr.DATE_PATTERN_LONG.text(), AppLocale.javaLocale)
 
     fun mapEpisodeToUi(episode: Episode): UiEpisode {
         val airDate = episode.date.takeIf { it.isNotBlank() }?.let { raw ->
             try {
-                LocalDate.parse(raw.take(10)).format(airDateFormatter)
+                LocalDate.parse(raw.take(10)).format(airDateFormatter())
             } catch (e: DateTimeParseException) {
                 ""
             }

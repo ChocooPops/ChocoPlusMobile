@@ -45,6 +45,9 @@ import com.chocoplusmobile.ui.icons.MyListCheckVector
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
 
 /** Whichever image the tapped card was actually showing — special/normal/
  * license poster, vertical or horizontal — the preview enlarges *that*
@@ -115,7 +118,7 @@ fun PosterPreviewSheet(target: PosterPreviewTarget?, onClose: () -> Unit) {
                 metaRecord = record
                 metaFor = media.id
             } catch (e: Exception) {
-                metaError = e.message ?: "Erreur réseau"
+                metaError = e.message ?: Tr.NETWORK_ERROR.text()
             } finally {
                 metaLoading = false
             }
@@ -145,7 +148,7 @@ fun PosterPreviewSheet(target: PosterPreviewTarget?, onClose: () -> Unit) {
                     Poster(title = target.title, uri = target.uri, ratio = target.ratio, radius = 14.dp, titleSize = 15.sp, hideFallbackTitle = true)
                     Text(target.title, color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 17.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                        PrimaryButton(label = "Lecture", icon = AppIcon.of("play_arrow"), onClick = ::play, loading = playing, height = 46.dp, modifier = Modifier.weight(1f))
+                        PrimaryButton(label = t(Tr.PLAYBACK), icon = AppIcon.of("play_arrow"), onClick = ::play, loading = playing, height = 46.dp, modifier = Modifier.weight(1f))
                         SquareIconButton(
                             icon = if (inList) MyListCheckVector(ChocoColors.text) else MyListAddVector(ChocoColors.text),
                             size = 46.dp,
@@ -156,7 +159,7 @@ fun PosterPreviewSheet(target: PosterPreviewTarget?, onClose: () -> Unit) {
                         SquareIconButton(icon = MetadataIconVector(ChocoColors.text), size = 46.dp, iconSize = 20.dp, background = Color(0x1AFFFFFF), onClick = ::openMeta)
                     }
                     Text(
-                        "Fermer",
+                        t(Tr.CLOSE),
                         color = ChocoColors.textMuted,
                         fontFamily = ChocoFonts.bodySemiBold,
                         fontSize = 12.5.sp,

@@ -36,6 +36,9 @@ import com.chocoplusmobile.download.DownloadStatus
 import com.chocoplusmobile.ui.icons.AppIcon
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
 
 /**
  * The one download control used everywhere (movie detail, each episode
@@ -75,7 +78,7 @@ fun DownloadButton(
         contentAlignment = Alignment.Center,
     ) {
         when (entry?.status) {
-            null -> Icon(AppIcon.of("download"), contentDescription = "Télécharger", tint = ChocoColors.text, modifier = Modifier.size(iconSize))
+            null -> Icon(AppIcon.of("download"), contentDescription = t(Tr.DOWNLOAD_ACTION), tint = ChocoColors.text, modifier = Modifier.size(iconSize))
             DownloadStatus.QUEUED, DownloadStatus.DOWNLOADING -> {
                 val percent = entry.progressPercent
                 val ringSize = iconSize + 6.dp
@@ -90,11 +93,11 @@ fun DownloadButton(
                         modifier = Modifier.size(ringSize),
                     )
                 }
-                Icon(AppIcon.of("close"), contentDescription = "Annuler le téléchargement", tint = ChocoColors.text, modifier = Modifier.size(iconSize * 0.55f))
+                Icon(AppIcon.of("close"), contentDescription = t(Tr.DOWNLOAD_CANCEL), tint = ChocoColors.text, modifier = Modifier.size(iconSize * 0.55f))
             }
-            DownloadStatus.COMPLETED -> Icon(AppIcon.of("download_done"), contentDescription = "Téléchargé", tint = ChocoColors.accent, modifier = Modifier.size(iconSize))
-            DownloadStatus.FAILED -> Icon(AppIcon.of("refresh"), contentDescription = "Téléchargement échoué", tint = Color(0xFFFF6B6B), modifier = Modifier.size(iconSize))
-            DownloadStatus.PAUSED -> Icon(AppIcon.of("refresh"), contentDescription = "Téléchargement en pause", tint = ChocoColors.text, modifier = Modifier.size(iconSize))
+            DownloadStatus.COMPLETED -> Icon(AppIcon.of("download_done"), contentDescription = t(Tr.DOWNLOAD_DONE), tint = ChocoColors.accent, modifier = Modifier.size(iconSize))
+            DownloadStatus.FAILED -> Icon(AppIcon.of("refresh"), contentDescription = t(Tr.DOWNLOAD_FAILED), tint = Color(0xFFFF6B6B), modifier = Modifier.size(iconSize))
+            DownloadStatus.PAUSED -> Icon(AppIcon.of("refresh"), contentDescription = t(Tr.DOWNLOAD_PAUSED), tint = ChocoColors.text, modifier = Modifier.size(iconSize))
         }
     }
 
@@ -109,24 +112,24 @@ fun DownloadButton(
 fun DownloadActionDialog(entry: DownloadEntry, onDismiss: () -> Unit) {
     val (title, text, confirm) = when (entry.status) {
         DownloadStatus.QUEUED, DownloadStatus.DOWNLOADING -> Triple(
-            "Annuler le téléchargement ?",
-            entry.progressPercent?.let { "Téléchargé à $it %. La partie déjà téléchargée sera supprimée." } ?: "Le téléchargement n'a pas encore commencé.",
-            "Annuler le téléchargement",
+            t(Tr.DOWNLOAD_CANCEL_CONFIRM),
+            entry.progressPercent?.let { t(Tr.DOWNLOAD_CANCEL_PROGRESS, it) } ?: t(Tr.DOWNLOAD_NOT_STARTED),
+            t(Tr.DOWNLOAD_CANCEL),
         )
         DownloadStatus.COMPLETED -> Triple(
-            "Supprimer le téléchargement ?",
-            "La vidéo ne sera plus disponible hors ligne." + (entry.totalBytes.takeIf { it > 0 }?.let { " ${formatBytes(it)} seront libérés." } ?: ""),
-            "Supprimer",
+            t(Tr.DOWNLOAD_DELETE_CONFIRM),
+            t(Tr.DOWNLOAD_DELETE_DESC) + (entry.totalBytes.takeIf { it > 0 }?.let { " " + t(Tr.DOWNLOADS_SPACE_FREED, formatBytes(it)) } ?: ""),
+            t(Tr.DELETE),
         )
         DownloadStatus.FAILED -> Triple(
-            "Téléchargement échoué",
-            entry.error ?: "Une erreur est survenue.",
-            "Supprimer",
+            t(Tr.DOWNLOAD_FAILED),
+            entry.error ?: t(Tr.DOWNLOAD_ERROR_GENERIC),
+            t(Tr.DELETE),
         )
         DownloadStatus.PAUSED -> Triple(
-            "Téléchargement en pause",
-            entry.progressPercent?.let { "Interrompu à $it %. Il reprendra là où il s'est arrêté." } ?: "Le téléchargement a été interrompu.",
-            "Supprimer",
+            t(Tr.DOWNLOAD_PAUSED),
+            entry.progressPercent?.let { t(Tr.DOWNLOAD_PAUSED_PROGRESS, it) } ?: t(Tr.DOWNLOAD_INTERRUPTED_DESC),
+            t(Tr.DELETE),
         )
     }
     AlertDialog(
@@ -142,11 +145,11 @@ fun DownloadActionDialog(entry: DownloadEntry, onDismiss: () -> Unit) {
         dismissButton = {
             if (entry.status == DownloadStatus.FAILED || entry.status == DownloadStatus.PAUSED) {
                 TextButton(onClick = { DownloadManager.retry(entry.key); onDismiss() }) {
-                    Text(if (entry.status == DownloadStatus.PAUSED) "Reprendre" else "Réessayer", color = ChocoColors.accent, fontFamily = ChocoFonts.bodyBold)
+                    Text(t(if (entry.status == DownloadStatus.PAUSED) Tr.RESUME else Tr.RETRY), color = ChocoColors.accent, fontFamily = ChocoFonts.bodyBold)
                 }
             } else {
                 TextButton(onClick = onDismiss) {
-                    Text("Fermer", color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold)
+                    Text(t(Tr.CLOSE), color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold)
                 }
             }
         },
@@ -171,5 +174,5 @@ fun rememberNotificationPermissionRequest(): () -> Unit {
 
 fun formatBytes(bytes: Long): String {
     val mb = bytes / (1024.0 * 1024.0)
-    return if (mb >= 1024) "%.1f Go".format(mb / 1024) else "%.0f Mo".format(mb)
+    return if (mb >= 1024) Tr.SIZE_GB.text("%.1f".format(mb / 1024)) else Tr.SIZE_MB.text("%.0f".format(mb))
 }

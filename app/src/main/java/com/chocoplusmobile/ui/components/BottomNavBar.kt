@@ -24,6 +24,8 @@ import com.chocoplusmobile.ui.icons.TabIconName
 import com.chocoplusmobile.ui.icons.TabIcons
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 /** How much bottom clearance a scrollable screen needs to reserve so its
  * last row doesn't end up hidden behind the floating bar — mirrors the RN
@@ -32,14 +34,14 @@ import com.chocoplusmobile.ui.theme.ChocoFonts
  * rather than reserving its own layout space. */
 val TAB_BAR_CLEARANCE = 70.dp
 
-data class BottomNavTab(val route: String, val icon: TabIconName, val label: String)
+data class BottomNavTab(val route: String, val icon: TabIconName, val label: Tr)
 
 val BOTTOM_NAV_TABS = listOf(
-    BottomNavTab("home", TabIconName.HOME, "Accueil"),
-    BottomNavTab("films", TabIconName.MOVIES, "Films"),
-    BottomNavTab("series", TabIconName.SERIES, "Séries"),
-    BottomNavTab("catalogue", TabIconName.CATALOGUE, "Catalogue"),
-    BottomNavTab("mylist", TabIconName.MYLIST, "Ma liste"),
+    BottomNavTab("home", TabIconName.HOME, Tr.PAGE_HOME),
+    BottomNavTab("films", TabIconName.MOVIES, Tr.PAGE_FILMS),
+    BottomNavTab("series", TabIconName.SERIES, Tr.PAGE_SERIES),
+    BottomNavTab("catalogue", TabIconName.CATALOGUE, Tr.PAGE_CATALOGUE),
+    BottomNavTab("mylist", TabIconName.MYLIST, Tr.PAGE_MYLIST),
 )
 
 /** Mirrors the RN app's components/CustomTabBar.tsx — Search deliberately
@@ -69,12 +71,12 @@ fun BottomNavBar(currentRoute: String?, onSelect: (String) -> Unit, modifier: Mo
                 ) {
                     androidx.compose.material3.Icon(
                         imageVector = TabIcons.get(tab.icon, tint),
-                        contentDescription = tab.label,
+                        contentDescription = t(tab.label),
                         tint = androidx.compose.ui.graphics.Color.Unspecified,
                         modifier = Modifier.size(22.dp),
                     )
                     Text(
-                        text = tab.label,
+                        text = t(tab.label),
                         color = tint,
                         fontFamily = if (focused) ChocoFonts.bodyBold else ChocoFonts.bodyMedium,
                         fontSize = 9.5.sp,

@@ -51,10 +51,13 @@ import com.chocoplusmobile.ui.icons.AppIcon
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
 
 private enum class Step { IDENTITY, CODE, DONE }
 private val STEP_ORDER = listOf(Step.IDENTITY, Step.CODE, Step.DONE)
-private val STEP_LABELS = mapOf(Step.IDENTITY to "Identité", Step.CODE to "Code mail", Step.DONE to "Validation")
+private val STEP_LABELS = mapOf(Step.IDENTITY to Tr.SIGNUP_STEP_IDENTITY, Step.CODE to Tr.SIGNUP_STEP_CODE, Step.DONE to Tr.SIGNUP_STEP_DONE)
 
 /** Mirrors the RN app's screens/Auth/SignupScreen.tsx — reworked against the
  * real auth routes (auth.controller.ts/auth.service.ts): send-verification-
@@ -109,9 +112,9 @@ fun SignupScreen() {
                     )
                 }
                 if (result.state) advanceTo(Step.CODE)
-                ActionStatus.Done(result.message.ifBlank { "Code envoyé." }, result.state)
+                ActionStatus.Done(result.message.ifBlank { Tr.SIGNUP_CODE_SENT.text() }, result.state)
             } catch (e: Exception) {
-                ActionStatus.Done((e as? ApiException)?.message ?: "Impossible d'envoyer le code", success = false)
+                ActionStatus.Done((e as? ApiException)?.message ?: Tr.SIGNUP_CODE_SEND_FAILED.text(), success = false)
             }
         }
     }
@@ -121,9 +124,9 @@ fun SignupScreen() {
         scope.launch {
             actionStatus = try {
                 val result = NetworkModule.safeCall { NetworkModule.api.resendVerificationCode(EmailPayload(email.trim())) }
-                ActionStatus.Done(result.message.ifBlank { "Code renvoyé." }, result.state)
+                ActionStatus.Done(result.message.ifBlank { Tr.SIGNUP_CODE_RESENT.text() }, result.state)
             } catch (e: Exception) {
-                ActionStatus.Done((e as? ApiException)?.message ?: "Impossible de renvoyer le code", success = false)
+                ActionStatus.Done((e as? ApiException)?.message ?: Tr.SIGNUP_CODE_RESEND_FAILED.text(), success = false)
             }
         }
     }
@@ -135,9 +138,9 @@ fun SignupScreen() {
             actionStatus = try {
                 val result = NetworkModule.safeCall { NetworkModule.api.register(RegisterPayload(verificationCode = codeInt, email = email.trim())) }
                 if (result.state) advanceTo(Step.DONE)
-                ActionStatus.Done(result.message.ifBlank { "Compte créé." }, result.state)
+                ActionStatus.Done(result.message.ifBlank { Tr.SIGNUP_ACCOUNT_CREATED.text() }, result.state)
             } catch (e: Exception) {
-                ActionStatus.Done((e as? ApiException)?.message ?: "Code invalide ou expiré", success = false)
+                ActionStatus.Done((e as? ApiException)?.message ?: Tr.SIGNUP_CODE_INVALID.text(), success = false)
             }
         }
     }
@@ -157,7 +160,7 @@ fun SignupScreen() {
             Image(painterResource(R.drawable.logo_mark), contentDescription = null, modifier = Modifier.size(76.dp).clip(RoundedCornerShape(20.dp)))
         }
 
-        Text("Créer un compte", color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 25.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 28.dp))
+        Text(t(Tr.CREATE_ACCOUNT), color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 25.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 28.dp))
 
         Row(modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 18.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             STEP_ORDER.forEachIndexed { i, s ->
@@ -173,7 +176,7 @@ fun SignupScreen() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxWidth().height(3.dp).background(if (active) ChocoColors.accent else Color(0x24FFFFFF), RoundedCornerShape(99.dp)))
-                    Text(STEP_LABELS[s]!!, color = if (active) ChocoColors.accent else ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 10.sp, modifier = Modifier.padding(top = 6.dp))
+                    Text(t(STEP_LABELS.getValue(s)), color = if (active) ChocoColors.accent else ChocoColors.textFaint, fontFamily = ChocoFonts.bodyBold, fontSize = 10.sp, modifier = Modifier.padding(top = 6.dp))
                 }
             }
         }
@@ -182,11 +185,11 @@ fun SignupScreen() {
             Step.IDENTITY -> {
                 Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
-                        PlainInput(firstName, { firstName = it }, "Prénom", modifier = Modifier.weight(1f))
-                        PlainInput(lastName, { lastName = it }, "Nom", modifier = Modifier.weight(1f))
+                        PlainInput(firstName, { firstName = it }, t(Tr.SIGNUP_FIRST_NAME), modifier = Modifier.weight(1f))
+                        PlainInput(lastName, { lastName = it }, t(Tr.SIGNUP_LAST_NAME), modifier = Modifier.weight(1f))
                     }
-                    PlainInput(pseudo, { pseudo = it }, "Pseudo (5 caractères min.)")
-                    PlainInput(email, { email = it }, "Adresse e-mail", keyboardType = KeyboardType.Email)
+                    PlainInput(pseudo, { pseudo = it }, t(Tr.SIGNUP_PSEUDO))
+                    PlainInput(email, { email = it }, t(Tr.LOGIN_EMAIL), keyboardType = KeyboardType.Email)
                     DatePickerField(isoValue = dateBorn, onIsoValueChange = { dateBorn = it }, height = 50.dp)
 }
 
@@ -196,7 +199,7 @@ fun SignupScreen() {
                 ) {
                     Icon(AppIcon.of("mark_email_unread"), contentDescription = null, tint = ChocoColors.accent, modifier = Modifier.size(19.dp))
                     Text(
-                        "Un code de vérification t'attend par mail. Ton compte sera ensuite validé par un administrateur avant le premier accès.",
+                        t(Tr.SIGNUP_CODE_INFO),
                         color = ChocoColors.textSecondary,
                         fontFamily = ChocoFonts.bodyRegular,
                         fontSize = 11.5.sp,
@@ -204,12 +207,12 @@ fun SignupScreen() {
                     )
                 }
 
-                PrimaryButton(label = "Recevoir mon code", onClick = ::submitIdentity, loading = actionStatus is ActionStatus.Loading, enabled = identityReady, height = 52.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
+                PrimaryButton(label = t(Tr.SIGNUP_GET_CODE), onClick = ::submitIdentity, loading = actionStatus is ActionStatus.Loading, enabled = identityReady, height = 52.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
             }
 
             Step.CODE -> {
                 Text(
-                    "Entre le code à 6 chiffres envoyé à\n$email",
+                    t(Tr.SIGNUP_ENTER_CODE, email),
                     color = ChocoColors.textSecondary,
                     fontFamily = ChocoFonts.bodyRegular,
                     fontSize = 13.sp,
@@ -218,9 +221,9 @@ fun SignupScreen() {
                     modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
                 )
                 OtpCodeField(value = code, onValueChange = { code = it }, modifier = Modifier.fillMaxWidth())
-                PrimaryButton(label = "Valider mon compte", onClick = ::submitCode, loading = actionStatus is ActionStatus.Loading, enabled = code.trim().length == 6, height = 52.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
+                PrimaryButton(label = t(Tr.SIGNUP_VALIDATE), onClick = ::submitCode, loading = actionStatus is ActionStatus.Loading, enabled = code.trim().length == 6, height = 52.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
                 Text(
-                    "Renvoyer le code",
+                    t(Tr.SIGNUP_RESEND),
                     color = ChocoColors.accent,
                     fontFamily = ChocoFonts.bodyBold,
                     fontSize = 12.5.sp,
@@ -232,16 +235,16 @@ fun SignupScreen() {
             Step.DONE -> {
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Icon(AppIcon.of("task_alt"), contentDescription = null, tint = ChocoColors.accent, modifier = Modifier.size(30.dp))
-                    Text("Compte créé !", color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 19.sp)
+                    Text(t(Tr.SIGNUP_DONE_TITLE), color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 19.sp)
                     Text(
-                        "Un administrateur doit encore activer ton compte avant ta première connexion. Tu recevras un mail dès que c'est fait.",
+                        t(Tr.SIGNUP_DONE_DESC),
                         color = ChocoColors.textSecondary,
                         fontFamily = ChocoFonts.bodyRegular,
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
                         lineHeight = 20.sp,
                     )
-                    PrimaryButton(label = "Retour à la connexion", onClick = { navController.navigate("login") { popUpTo("login") { inclusive = true } } }, height = 48.dp, modifier = Modifier.fillMaxWidth())
+                    PrimaryButton(label = t(Tr.SIGNUP_BACK_TO_LOGIN), onClick = { navController.navigate("login") { popUpTo("login") { inclusive = true } } }, height = 48.dp, modifier = Modifier.fillMaxWidth())
                 }
             }
         }
@@ -251,9 +254,9 @@ fun SignupScreen() {
                 6.dp,
                 Alignment.CenterHorizontally)
             ) {
-                Text("Déjà inscrit ? ", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.5.sp)
+                Text(t(Tr.SIGNUP_ALREADY_REGISTERED), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.5.sp)
                 Text(
-                    "Se connecter",
+                    t(Tr.SIGN_IN),
                     color = ChocoColors.accent,
                     fontFamily = ChocoFonts.bodyBold,
                     fontSize = 12.5.sp,

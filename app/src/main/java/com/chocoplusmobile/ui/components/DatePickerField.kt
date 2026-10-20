@@ -37,6 +37,8 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 private val ISO_FORMAT: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 private val DISPLAY_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.FRANCE)
@@ -114,9 +116,9 @@ fun DatePickerField(
                 TextButton(onClick = {
                     state.selectedDateMillis?.let { onIsoValueChange(utcMillisToIso(it)) }
                     pickerOpen = false
-                }) { Text("OK") }
+                }) { Text(t(Tr.OK)) }
             },
-            dismissButton = { TextButton(onClick = { pickerOpen = false }) { Text("Annuler") } },
+            dismissButton = { TextButton(onClick = { pickerOpen = false }) { Text(t(Tr.CANCEL)) } },
         ) {
             DatePicker(state = state)
         }

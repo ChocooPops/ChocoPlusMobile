@@ -55,6 +55,8 @@ import com.chocoplusmobile.ui.components.longPressable
 import com.chocoplusmobile.ui.rememberApiData
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 private const val MEDIA_LIST_ITEM_WIDTH = 132
 
@@ -132,7 +134,7 @@ fun LicenseDetailScreen(licenseId: Int, fallbackTitle: String) {
 
                             if (license.mediaList.isNotEmpty()) {
                                 Column(modifier = Modifier.padding(vertical = 12.dp)) {
-                                    SectionHeader(title = "Contenu principal", accentBar = true, onClick = {
+                                    SectionHeader(title = t(Tr.LICENSE_MAIN_CONTENT), accentBar = true, onClick = {
                                         NavCache.pendingCatalogueFilter = CatalogueEntryFilter.LicenseSeeAll(licenseId, license.name)
                                         navController.navigate("catalogue")
                                     })
@@ -144,7 +146,7 @@ fun LicenseDetailScreen(licenseId: Int, fallbackTitle: String) {
                                             uri = uri,
                                             ratio = PosterRatio.R2_3,
                                             titleSize = 13.sp,
-                                            badge = if (ui.type == UiMediaType.SERIE) "SÉRIE" else null,
+                                            badge = if (ui.type == UiMediaType.SERIE) t(Tr.BADGE_SERIES) else null,
                                             modifier = Modifier.width(MEDIA_LIST_ITEM_WIDTH.dp).longPressable({ openMedia(media) }, { mediaPreview = PosterPreviewTarget(media, uri, PosterRatio.R2_3, ui.title) }),
                                         )
                                     }
@@ -200,7 +202,7 @@ private fun LicenseSelectionRow(selection: Selection, format: PosterFormat, onOp
                         uri = uri,
                         ratio = PosterRatio.R2_3,
                         titleSize = 14.sp,
-                        badge = if (ui.type == UiMediaType.SERIE) "SÉRIE" else null,
+                        badge = if (ui.type == UiMediaType.SERIE) t(Tr.BADGE_SERIES) else null,
                         modifier = Modifier.width(152.dp).longPressable({ onOpenMedia(media) }, { preview = PosterPreviewTarget(media, uri, PosterRatio.R2_3, ui.title) }),
                     )
                 }
@@ -210,7 +212,7 @@ private fun LicenseSelectionRow(selection: Selection, format: PosterFormat, onOp
                         uri = ui.posterUrl,
                         ratio = PosterRatio.R2_3,
                         titleSize = 12.5.sp,
-                        badge = if (ui.type == UiMediaType.SERIE) "SÉRIE" else null,
+                        badge = if (ui.type == UiMediaType.SERIE) t(Tr.BADGE_SERIES) else null,
                         modifier = Modifier.width(112.dp).longPressable({ onOpenMedia(media) }, { preview = PosterPreviewTarget(media, ui.posterUrl, PosterRatio.R2_3, ui.title) }),
                     )
                 }

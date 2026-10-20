@@ -49,8 +49,11 @@ import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
+import com.chocoplusmobile.i18n.text
 
-private val MEDIA_FILTERS = listOf("Tout" to null, "Films" to MediaType.MOVIE, "Séries" to MediaType.SERIES)
+private val MEDIA_FILTERS = listOf(Tr.CATALOGUE_MEDIA_ALL to null, Tr.PAGE_FILMS to MediaType.MOVIE, Tr.PAGE_SERIES to MediaType.SERIES)
 
 // Same "tranche" size for the first fetch and every load-more one.
 private const val HISTORY_PAGE_SIZE = 30
@@ -100,7 +103,7 @@ fun HistoryScreen() {
                 items = if (append) items + res.medias else res.medias
                 total = res.total
             } catch (e: Exception) {
-                error = e.message ?: "Erreur réseau"
+                error = e.message ?: Tr.NETWORK_ERROR.text()
             } finally {
                 loading = false
                 loadingMore = false
@@ -127,8 +130,8 @@ fun HistoryScreen() {
     }
 
     Column(modifier = Modifier.fillMaxSize().background(ChocoColors.bg).padding(top = 50.dp).verticalScroll(scrollState).padding(horizontal = 16.dp).padding(top = 16.dp, bottom = com.chocoplusmobile.ui.components.TAB_BAR_CLEARANCE)) {
-        ScreenHeaderBack(title = "Historique", onBack = { navController.popBackStack() })
-        Text("Tes contenus déjà visionnés, du plus récent au plus ancien.", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+        ScreenHeaderBack(title = t(Tr.PROFILE_HISTORY), onBack = { navController.popBackStack() })
+        Text(t(Tr.HISTORY_INTRO), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
 
         Row(modifier = Modifier.padding(top = 14.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             MEDIA_FILTERS.forEach { (label, value) ->
@@ -139,7 +142,7 @@ fun HistoryScreen() {
                         .clickable { filter = value }
                         .padding(horizontal = 14.dp, vertical = 8.dp),
                 ) {
-                    Text(label, color = if (active) ChocoColors.onAccent else ChocoColors.textTertiary, fontFamily = ChocoFonts.bodyBold, fontSize = 12.sp)
+                    Text(t(label), color = if (active) ChocoColors.onAccent else ChocoColors.textTertiary, fontFamily = ChocoFonts.bodyBold, fontSize = 12.sp)
                 }
             }
         }
@@ -147,7 +150,7 @@ fun HistoryScreen() {
         when {
             loading -> LoadingState()
             error != null -> ErrorState(message = error!!, onRetry = { retryTick++ })
-            items.isEmpty() -> Text("Rien à afficher pour l'instant.", color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 13.sp, modifier = Modifier.fillMaxWidth().padding(vertical = 30.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            items.isEmpty() -> Text(t(Tr.HISTORY_EMPTY), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 13.sp, modifier = Modifier.fillMaxWidth().padding(vertical = 30.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             else -> {
                 Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
                     items.forEach { media ->
@@ -170,7 +173,7 @@ fun HistoryScreen() {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(ui.title, color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 13.5.sp, maxLines = 1)
                                 Text(
-                                    (if (ui.type == UiMediaType.SERIE) "Série · " else "Film · ") + "${progress.roundToInt()} % regardé",
+                                    t(if (ui.type == UiMediaType.SERIE) Tr.HISTORY_SERIES_PROGRESS else Tr.HISTORY_MOVIE_PROGRESS, progress.roundToInt()),
                                     color = ChocoColors.textMuted,
                                     fontFamily = ChocoFonts.bodyRegular,
                                     fontSize = 11.sp,
@@ -179,7 +182,7 @@ fun HistoryScreen() {
                             }
                             val done = progress >= 95
                             Row(modifier = Modifier.background(if (done) ChocoColors.accentSoft else Color(0x1AFFFFFF), RoundedCornerShape(99.dp)).padding(horizontal = 8.dp, vertical = 3.dp)) {
-                                Text(if (done) "Terminé" else "En cours", color = if (done) ChocoColors.accent else Color(0x99FFFFFF), fontFamily = ChocoFonts.bodyBold, fontSize = 10.sp, letterSpacing = 0.4.sp)
+                                Text(t(if (done) Tr.WATCH_FINISHED else Tr.WATCH_IN_PROGRESS), color = if (done) ChocoColors.accent else Color(0x99FFFFFF), fontFamily = ChocoFonts.bodyBold, fontSize = 10.sp, letterSpacing = 0.4.sp)
                             }
                         }
                     }

@@ -20,6 +20,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.text
 
 /**
  * Foreground service whose only job is keeping the process alive (and
@@ -75,16 +77,16 @@ class DownloadService : Service() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = getSystemService(NotificationManager::class.java)
         if (manager.getNotificationChannel(CHANNEL_ID) == null) {
-            manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, "Téléchargements", NotificationManager.IMPORTANCE_LOW))
+            manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, Tr.PAGE_DOWNLOADS.text(), NotificationManager.IMPORTANCE_LOW))
         }
     }
 
     private fun buildNotification(active: List<DownloadEntry>): android.app.Notification {
         val running = active.filter { it.status == DownloadStatus.DOWNLOADING }
         val title = when (active.size) {
-            0 -> "Téléchargements"
-            1 -> "Téléchargement de ${active.first().displayTitle()}"
-            else -> "${active.size} téléchargements en cours"
+            0 -> Tr.PAGE_DOWNLOADS.text()
+            1 -> Tr.DOWNLOAD_NOTIF_ONE.text(active.first().displayTitle())
+            else -> Tr.DOWNLOAD_NOTIF_MANY.text(active.size)
         }
         val known = running.filter { it.totalBytes > 0 }
         val percent = if (known.isNotEmpty()) ((known.sumOf { it.bytesDownloaded } * 100) / known.sumOf { it.totalBytes }).toInt() else null
@@ -97,7 +99,7 @@ class DownloadService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentTitle(title)
-            .setContentText(percent?.let { "$it %" } ?: "En attente…")
+            .setContentText(percent?.let { Tr.PERCENT.text(it) } ?: Tr.DOWNLOAD_STATUS_QUEUED.text())
             .setProgress(100, percent ?: 0, percent == null)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -126,7 +128,7 @@ class DownloadService : Service() {
 fun DownloadEntry.displayTitle(): String {
     val mediaTitle = media?.title ?: ""
     return when (kind) {
-        DownloadKind.MOVIE -> mediaTitle.ifBlank { "Film" }
-        DownloadKind.EPISODE -> listOf(mediaTitle, episode?.name ?: "").filter { it.isNotBlank() }.joinToString(" · ").ifBlank { "Épisode" }
+        DownloadKind.MOVIE -> mediaTitle.ifBlank { Tr.MOVIE.text() }
+        DownloadKind.EPISODE -> listOf(mediaTitle, episode?.name ?: "").filter { it.isNotBlank() }.joinToString(" · ").ifBlank { Tr.EPISODE.text() }
     }
 }

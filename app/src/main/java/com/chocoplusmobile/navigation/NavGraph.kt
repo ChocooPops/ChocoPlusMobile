@@ -71,6 +71,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.unit.dp
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 /**
  * Root navigation — mirrors the RN app's RootNavigator.tsx (top-level: auth
@@ -138,7 +140,7 @@ private fun OfflineModeChip(onClick: () -> Unit, modifier: Modifier = Modifier) 
         horizontalArrangement = Arrangement.spacedBy(7.dp),
     ) {
         Icon(AppIcon.of("download_for_offline"), contentDescription = null, tint = ChocoColors.text, modifier = Modifier.size(20.dp))
-        Text("Hors ligne", color = ChocoColors.text, fontFamily = ChocoFonts.bodySemiBold, fontSize = 13.sp)
+        Text(t(Tr.OFFLINE_MODE), color = ChocoColors.text, fontFamily = ChocoFonts.bodySemiBold, fontSize = 13.sp)
     }
 }
 

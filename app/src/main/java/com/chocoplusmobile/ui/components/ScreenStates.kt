@@ -26,6 +26,8 @@ import androidx.compose.ui.window.DialogProperties
 import com.chocoplusmobile.ui.icons.AppIcon
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 /** Mirrors the RN app's components/ScreenState.tsx (Loading/Error) plus
  * EmptyState.tsx — kept together since they're all tiny "centered column"
@@ -49,9 +51,9 @@ fun ErrorState(message: String, onRetry: () -> Unit, modifier: Modifier = Modifi
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(AppIcon.of("wifi_off"), contentDescription = null, tint = ChocoColors.textMuted, modifier = Modifier.size(36.dp))
-        Text("Connexion au serveur impossible", color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 15.sp)
+        Text(t(Tr.ERROR_SERVER_CONNECTION), color = ChocoColors.text, fontFamily = ChocoFonts.headingBold, fontSize = 15.sp)
         Text(message, color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.5.sp, textAlign = TextAlign.Center, lineHeight = 19.sp)
-        PrimaryButton(label = "Réessayer", onClick = onRetry, height = 42.dp, modifier = Modifier.padding(top = 6.dp))
+        PrimaryButton(label = t(Tr.RETRY), onClick = onRetry, height = 42.dp, modifier = Modifier.padding(top = 6.dp))
     }
 }
 
@@ -119,7 +121,7 @@ fun ActionStatusOverlay(status: ActionStatus?, onDismiss: () -> Unit) {
                 when (status) {
                     is ActionStatus.Loading -> {
                         CircularProgressIndicator(color = ChocoColors.accent)
-                        Text("Chargement…", color = ChocoColors.text, fontFamily = ChocoFonts.bodyMedium, fontSize = 13.sp, modifier = Modifier.padding(top = 12.dp))
+                        Text(t(Tr.LOADING), color = ChocoColors.text, fontFamily = ChocoFonts.bodyMedium, fontSize = 13.sp, modifier = Modifier.padding(top = 12.dp))
                     }
                     is ActionStatus.Done -> {
                         Icon(
@@ -136,7 +138,7 @@ fun ActionStatusOverlay(status: ActionStatus?, onDismiss: () -> Unit) {
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(top = 10.dp, bottom = 18.dp),
                         )
-                        PrimaryButton(label = "OK", onClick = onDismiss, height = 40.dp, modifier = Modifier.fillMaxWidth())
+                        PrimaryButton(label = t(Tr.OK), onClick = onDismiss, height = 40.dp, modifier = Modifier.fillMaxWidth())
                     }
                 }
             }

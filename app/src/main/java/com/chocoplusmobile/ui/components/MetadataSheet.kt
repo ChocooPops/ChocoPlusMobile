@@ -17,15 +17,17 @@ import androidx.compose.ui.unit.sp
 import com.chocoplusmobile.data.MetadataRow
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 /** Mirrors the RN app's components/MetadataSheet.tsx — the simple key/value
  * "sync_alt" metadata button on MovieDetail/SerieDetail. */
 @Composable
 fun MetadataSheet(visible: Boolean, onClose: () -> Unit, rows: List<MetadataRow>, loading: Boolean = false) {
     ChocoBottomSheet(visible = visible, onClose = onClose, maxHeightPct = 0.8f) {
-        Text("Métadonnées", color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 19.sp)
+        Text(t(Tr.META_TITLE), color = ChocoColors.text, fontFamily = ChocoFonts.headingExtraBold, fontSize = 19.sp)
         Text(
-            "L'édition reste réservée aux administrateurs, sur desktop.",
+            t(Tr.META_ADMIN_ONLY),
             color = ChocoColors.textMuted,
             fontFamily = ChocoFonts.bodyRegular,
             fontSize = 12.sp,
@@ -38,7 +40,7 @@ fun MetadataSheet(visible: Boolean, onClose: () -> Unit, rows: List<MetadataRow>
                 rows.forEach { r -> MetadataRowLine(r) }
             }
         }
-        PrimaryButton(label = "Fermer", variant = ButtonVariant.OUTLINE, onClick = onClose, height = 46.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
+        PrimaryButton(label = t(Tr.CLOSE), variant = ButtonVariant.OUTLINE, onClick = onClose, height = 46.dp, modifier = Modifier.fillMaxWidth().padding(top = 18.dp))
     }
 }
 

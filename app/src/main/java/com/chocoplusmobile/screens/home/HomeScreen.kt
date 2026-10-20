@@ -81,6 +81,8 @@ import com.chocoplusmobile.ui.rememberApiData
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
 import kotlinx.coroutines.launch
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 /** Mirrors the RN app's screens/Home/HomeScreen.tsx. */
 @Composable
@@ -171,7 +173,7 @@ fun HomeScreen() {
                                 }
                             }
                             if (data.news.isEmpty() && data.licenses.isEmpty() && data.selections.isEmpty()) {
-                                ErrorState(message = "Aucun contenu à afficher pour le moment.", onRetry = ::refresh)
+                                ErrorState(message = t(Tr.HOME_NO_CONTENT), onRetry = ::refresh)
                             }
                         }
                     }
@@ -260,7 +262,7 @@ private fun HeroCarousel(news: List<News>, onOpenMedia: (Media) -> Unit, onPlay:
             horizontalArrangement = Arrangement.spacedBy(7.dp),
         ) {
             Icon(AppIcon.of("campaign"), contentDescription = null, tint = ChocoColors.accent, modifier = Modifier.size(15.dp))
-            Text("À LA UNE", color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp)
+            Text(t(Tr.HOME_FEATURED).uppercase(), color = ChocoColors.text, fontFamily = ChocoFonts.bodyBold, fontSize = 11.sp)
         }
 
         Column(modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 18.dp).padding(top = 14.dp, bottom = 22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -296,7 +298,7 @@ private fun HeroCarousel(news: List<News>, onOpenMedia: (Media) -> Unit, onPlay:
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(AppIcon.of("play_arrow"), contentDescription = null, tint = ChocoColors.onAccent, modifier = Modifier.size(16.dp))
-                    Text("Lecture", color = ChocoColors.onAccent, fontFamily = ChocoFonts.bodyBold, fontSize = 15.sp, modifier = Modifier.padding(start = 7.dp))
+                    Text(t(Tr.PLAYBACK), color = ChocoColors.onAccent, fontFamily = ChocoFonts.bodyBold, fontSize = 15.sp, modifier = Modifier.padding(start = 7.dp))
                 }
                 SquareIconButton(icon = DetailIconVector(ChocoColors.text), size = 48.dp, background = Color(0x21FFFFFF), onClick = { featMedia?.let(onOpenMedia) })
                 SquareIconButton(
@@ -335,7 +337,7 @@ private fun HomeSelectionRow(selection: Selection, format: PosterFormat, onOpenM
                         uri = uri,
                         ratio = PosterRatio.R2_3,
                         titleSize = 14.sp,
-                        badge = if (ui.type == UiMediaType.SERIE) "SÉRIE" else null,
+                        badge = if (ui.type == UiMediaType.SERIE) t(Tr.BADGE_SERIES) else null,
                         modifier = Modifier.width(152.dp).longPressable(onClick = { onOpenMedia(media) }, onLongPress = { preview = PosterPreviewTarget(media, uri, PosterRatio.R2_3, ui.title) }),
                     )
                 }
@@ -345,7 +347,7 @@ private fun HomeSelectionRow(selection: Selection, format: PosterFormat, onOpenM
                         uri = ui.posterUrl,
                         ratio = PosterRatio.R2_3,
                         titleSize = 12.5.sp,
-                        badge = if (ui.type == UiMediaType.SERIE) "SÉRIE" else null,
+                        badge = if (ui.type == UiMediaType.SERIE) t(Tr.BADGE_SERIES) else null,
                         modifier = Modifier.width(112.dp).longPressable(onClick = { onOpenMedia(media) }, onLongPress = { preview = PosterPreviewTarget(media, ui.posterUrl, PosterRatio.R2_3, ui.title) }),
                     )
                 }
