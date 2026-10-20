@@ -57,6 +57,7 @@ import com.chocoplusmobile.download.DownloadManager
 import com.chocoplusmobile.download.DownloadStatus
 import com.chocoplusmobile.download.canDownload
 import com.chocoplusmobile.ui.components.ChocoProgressBar
+import com.chocoplusmobile.ui.components.TimedProgress
 import com.chocoplusmobile.ui.components.DownloadButton
 import com.chocoplusmobile.ui.components.rememberNotificationPermissionRequest
 import androidx.compose.material3.AlertDialog
@@ -504,11 +505,20 @@ private fun EpisodeRow(episode: Episode, onClick: () -> Unit, download: Download
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("${eUi.number}", color = ChocoColors.textFaint, fontFamily = ChocoFonts.headingExtraBold, fontSize = 14.sp, modifier = Modifier.width(24.dp).padding(top = 32.dp))
-        Poster(title = eUi.title, uri = eUi.posterUrl, ratio = PosterRatio.R16_9, radius = 4.dp, titleSize = 8.5.sp, progress = eUi.progress.takeIf { it > 0 }, modifier = Modifier.width(152.dp)) {
-            if (eUi.progress >= 100) {
-                Box(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(17.dp).background(ChocoColors.accent, androidx.compose.foundation.shape.RoundedCornerShape(99.dp)), contentAlignment = Alignment.Center) {
-                    Icon(AppIcon.of("check"), contentDescription = null, tint = ChocoColors.onAccent, modifier = Modifier.size(12.dp))
+        // Started but not finished: time left / time watched right under
+        // the thumbnail, same as the movie page — it carries its own bar,
+        // so the thumbnail's built-in one is only kept for finished ones.
+        val inProgress = eUi.progress > 0 && eUi.progress < 100
+        Column(modifier = Modifier.width(152.dp)) {
+            Poster(title = eUi.title, uri = eUi.posterUrl, ratio = PosterRatio.R16_9, radius = 4.dp, titleSize = 8.5.sp, progress = eUi.progress.takeIf { it > 0 && !inProgress }, modifier = Modifier.fillMaxWidth()) {
+                if (eUi.progress >= 100) {
+                    Box(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(17.dp).background(ChocoColors.accent, androidx.compose.foundation.shape.RoundedCornerShape(99.dp)), contentAlignment = Alignment.Center) {
+                        Icon(AppIcon.of("check"), contentDescription = null, tint = ChocoColors.onAccent, modifier = Modifier.size(12.dp))
+                    }
                 }
+            }
+            if (inProgress) {
+                TimedProgress(progress = eUi.progress, durationMs = episode.duration, fontSize = 10.sp, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
             }
         }
         Column(modifier = Modifier.weight(1f)) {

@@ -59,7 +59,7 @@ import com.chocoplusmobile.navigation.NavCache
 import com.chocoplusmobile.state.LocalAppViewModel
 import com.chocoplusmobile.state.LocalNavController
 import com.chocoplusmobile.state.MediaLabelStyle
-import com.chocoplusmobile.ui.components.ChocoProgressBar
+import com.chocoplusmobile.ui.components.TimedProgress
 import com.chocoplusmobile.ui.components.FadeInImage
 import com.chocoplusmobile.ui.components.IconCircleButton
 import com.chocoplusmobile.ui.components.LoadingState
@@ -265,13 +265,12 @@ fun MovieDetailScreen() {
                     }
 
                     if ((progress ?: 0.0) > 0) {
-                        Column(modifier = Modifier.padding(top = 14.dp)) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(t(Tr.DETAIL_RESUME_PLAYBACK), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp)
-                                Text(t(Tr.PERCENT, progress!!.toInt()), color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 11.sp)
-                            }
-                            ChocoProgressBar(progress = progress!!, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
-                        }
+                        TimedProgress(
+                            progress = progress!!,
+                            durationMs = media.duration,
+                            leading = t(Tr.DETAIL_RESUME_PLAYBACK),
+                            modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
+                        )
                     }
 
                     Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {

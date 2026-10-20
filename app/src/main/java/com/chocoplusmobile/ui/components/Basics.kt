@@ -5,7 +5,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -35,7 +37,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.geometry.isSpecified
@@ -45,6 +51,8 @@ import androidx.compose.foundation.Image
 import com.chocoplusmobile.data.Palette
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
+import com.chocoplusmobile.i18n.Tr
+import com.chocoplusmobile.i18n.t
 
 // ── Chip ──
 
@@ -212,6 +220,68 @@ fun ChocoProgressBar(
                 .fillMaxWidth(fraction)
                 .background(fillColor, RoundedCornerShape(999.dp)),
         )
+    }
+}
+
+/** Playback time, shortest readable form: 3600 s → "1h 00", 3000 s →
+ * "50min", under a minute → "45s". */
+@Composable
+fun formatPlaybackTime(seconds: Long): String {
+    val s = seconds.coerceAtLeast(0)
+    val h = s / 3600
+    val m = (s % 3600) / 60
+    return when {
+        h > 0 -> t(Tr.TIME_HM, h, m.toString().padStart(2, '0'))
+        m > 0 -> t(Tr.TIME_M, m)
+        else -> t(Tr.TIME_S, s)
+    }
+}
+
+/**
+ * Watch progress with times: [leading] (optional) on the left and the time
+ * left on the right, then the time watched sitting above the bar right
+ * where its fill ends, then the bar. Falls back to the percentage on the
+ * right when the duration is unknown.
+ */
+@Composable
+fun TimedProgress(
+    progress: Double,
+    durationMs: Long?,
+    modifier: Modifier = Modifier,
+    leading: String? = null,
+    fontSize: TextUnit = 11.sp,
+) {
+    val fraction = (progress / 100.0).coerceIn(0.0, 1.0)
+    val totalSeconds = durationMs?.takeIf { it > 0 }?.div(1000)
+    val watchedSeconds = totalSeconds?.let { (it * fraction).toLong() }
+    val style = TextStyle(color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = fontSize)
+    Column(modifier = modifier) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(leading.orEmpty(), style = style)
+            Text(
+                if (totalSeconds != null && watchedSeconds != null) t(Tr.TIME_REMAINING, formatPlaybackTime(totalSeconds - watchedSeconds))
+                else t(Tr.PERCENT, progress.toInt()),
+                style = style,
+            )
+        }
+        if (watchedSeconds != null) {
+            ProgressMarkerLabel(fraction = fraction.toFloat(), modifier = Modifier.padding(top = 4.dp)) {
+                Text(formatPlaybackTime(watchedSeconds), style = style.copy(color = ChocoColors.accent, fontFamily = ChocoFonts.bodyBold))
+            }
+        }
+        ChocoProgressBar(progress = progress, modifier = Modifier.fillMaxWidth().padding(top = if (watchedSeconds != null) 3.dp else 6.dp))
+    }
+}
+
+/** Places its single child centered on [fraction] of the available width,
+ * kept inside the edges near 0 % and 100 %. */
+@Composable
+private fun ProgressMarkerLabel(fraction: Float, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Layout(content = content, modifier = modifier.fillMaxWidth()) { measurables, constraints ->
+        val placeable = measurables.first().measure(constraints.copy(minWidth = 0))
+        val width = constraints.maxWidth
+        val x = (width * fraction - placeable.width / 2f).roundToInt().coerceIn(0, (width - placeable.width).coerceAtLeast(0))
+        layout(width, placeable.height) { placeable.place(x, 0) }
     }
 }
 

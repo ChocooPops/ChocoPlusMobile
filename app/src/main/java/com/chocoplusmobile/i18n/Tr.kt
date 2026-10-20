@@ -376,6 +376,11 @@ enum class Tr {
     ERROR_SERVER_CONNECTION,
     LOADING,
     OK,
+    // ── Playback time ──
+    TIME_HM,
+    TIME_M,
+    TIME_S,
+    TIME_REMAINING,
 }
 
 private fun tr(fr: String, en: String, ja: String): Map<AppLanguage, String> = mapOf(AppLanguage.FR to fr, AppLanguage.EN to en, AppLanguage.JA to ja)
@@ -918,6 +923,10 @@ private val TRANSLATIONS: Map<Tr, Map<AppLanguage, String>> = mapOf(
     Tr.ERROR_SERVER_CONNECTION to tr("Connexion au serveur impossible", "Unable to reach the server", "サーバーに接続できません"),
     Tr.LOADING to tr("Chargement…", "Loading…", "読み込み中…"),
     Tr.OK to tr("OK", "OK", "OK"),
+    Tr.TIME_HM to tr("%1\$dh %2\$s", "%1\$dh %2\$s", "%1\$d時間%2\$s分"),
+    Tr.TIME_M to tr("%1\$dmin", "%1\$dmin", "%1\$d分"),
+    Tr.TIME_S to tr("%1\$ds", "%1\$ds", "%1\$d秒"),
+    Tr.TIME_REMAINING to tr("%1\$s restantes", "%1\$s left", "残り%1\$s"),
 )
 
 /** Resolves [key] against Settings > language, recomposing automatically
