@@ -3,7 +3,7 @@ package com.chocoplusmobile.download
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import com.chocoplusmobile.BuildConfig
+import com.chocoplusmobile.api.ServerConfigHolder
 import com.chocoplusmobile.api.Episode
 import com.chocoplusmobile.api.Media
 import com.chocoplusmobile.api.NetworkModule
@@ -355,8 +355,8 @@ object DownloadManager {
     private suspend fun downloadVideo(key: String) {
         val entry = _entries.value[key] ?: return
         val url = when (entry.kind) {
-            DownloadKind.MOVIE -> "${BuildConfig.API_URL}/download/download-movie/${entry.mediaId}"
-            DownloadKind.EPISODE -> "${BuildConfig.API_URL}/download/download-episode/${entry.episodeId}"
+            DownloadKind.MOVIE -> "${ServerConfigHolder.apiUrl}/download/download-movie/${entry.mediaId}"
+            DownloadKind.EPISODE -> "${ServerConfigHolder.apiUrl}/download/download-episode/${entry.episodeId}"
         }
         val part = partFile(key)
         val offset = if (part.exists()) part.length() else 0L

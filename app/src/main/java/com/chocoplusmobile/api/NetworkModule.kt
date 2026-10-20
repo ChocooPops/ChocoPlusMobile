@@ -45,8 +45,8 @@ fun Throwable.isServerUnavailable(): Boolean {
 private class AuthHeadersInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val builder = chain.request().newBuilder()
-            .addHeader(BuildConfig.HEADER_NAME_FIELD_SECRET_API, BuildConfig.HEADER_SECRET_API)
             .addHeader("Accept-Language", AuthTokenHolder.language)
+        ServerConfigHolder.current?.let { builder.addHeader(it.headerName, it.headerValue) }
         AuthTokenHolder.token?.let { builder.addHeader("Authorization", "Bearer $it") }
         val response = chain.proceed(builder.build())
         if (response.code == 401) {
@@ -87,7 +87,9 @@ object NetworkModule {
         .build()
 
     private val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(BuildConfig.API_URL + "/")
+        // Placeholder until the server form is filled in — the UI shows
+        // nothing but that form then, so no request is ever built on it.
+        .baseUrl(ServerConfigHolder.apiUrl.ifEmpty { "http://localhost" } + "/")
         .client(okHttpClient)
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
@@ -106,8 +108,9 @@ object NetworkModule {
      * a 401/404 — means the server is there; a network error, a timeout or
      * a 5xx (incl. a reverse proxy's 502/503 for a dead backend) means not. */
     suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
+        if (!ServerConfigHolder.isConfigured) return@withContext false
         try {
-            probeClient.newCall(Request.Builder().url(BuildConfig.API_URL + "/").build()).execute().use { it.code < 500 }
+            probeClient.newCall(Request.Builder().url(ServerConfigHolder.apiUrl + "/").build()).execute().use { it.code < 500 }
         } catch (e: java.io.IOException) {
             false
         }

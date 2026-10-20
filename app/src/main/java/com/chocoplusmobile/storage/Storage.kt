@@ -69,34 +69,3 @@ class PrefsStorage(private val context: Context) {
         }
     }
 }
-
-/** Last user record successfully fetched from the server — only read back
- * when the app starts with no connectivity, so an ADMIN/FAMILY account can
- * still reach its offline downloads (see AppViewModel's auth boot). */
-class UserStorage(private val context: Context) {
-    private val key = stringPreferencesKey("chocoplus.auth.user")
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
-
-    suspend fun read(): com.chocoplusmobile.api.User? = try {
-        context.dataStore.data.first()[key]?.let { json.decodeFromString(com.chocoplusmobile.api.User.serializer(), it) }
-    } catch (e: Exception) {
-        null
-    }
-
-    suspend fun write(user: com.chocoplusmobile.api.User) {
-        try {
-            val raw = json.encodeToString(com.chocoplusmobile.api.User.serializer(), user)
-            context.dataStore.edit { it[key] = raw }
-        } catch (e: Exception) {
-            // best-effort — only costs offline access to downloads
-        }
-    }
-
-    suspend fun clear() {
-        try {
-            context.dataStore.edit { it.remove(key) }
-        } catch (e: Exception) {
-            // ignore
-        }
-    }
-}

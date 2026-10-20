@@ -110,13 +110,17 @@ fun LoginScreen() {
             LoginField(
                 icon = "lock",
                 value = password,
-                onValueChange = { password = it },
+                // Typing again always masks it back, even if it was shown.
+                onValueChange = { password = it; hidden = true },
                 placeholder = "Mot de passe",
+                // Password (even while shown in clear): no keyboard
+                // suggestions or learning of what's typed here.
+                keyboardType = KeyboardType.Password,
                 visualTransformation = if (hidden) PasswordVisualTransformation() else VisualTransformation.None,
                 enabled = !loading,
                 trailing = {
                     androidx.compose.material3.Icon(
-                        AppIcon.of(if (hidden) "visibility" else "visibility_off"),
+                        AppIcon.of(if (hidden) "visibility_off" else "visibility"),
                         contentDescription = null,
                         tint = androidx.compose.ui.graphics.Color(0x4DFFFFFF),
                         modifier = Modifier.size(20.dp).clickable { hidden = !hidden },
@@ -164,15 +168,6 @@ fun LoginScreen() {
             )
         }
 
-        // Offline access to downloaded videos, no login needed — only
-        // offered when something is actually downloaded on this device
-        // (and not twice: the server banner already has its own button).
-        if (hasDownloads && !serverUnavailable) {
-            com.chocoplusmobile.navigation.OfflineModeButton(
-                onClick = appViewModel::enterOfflineSession,
-                modifier = Modifier.fillMaxWidth().padding(top = 28.dp),
-            )
-        }
     }
 }
 
@@ -191,7 +186,10 @@ private fun ServerUnavailableBanner(hasDownloads: Boolean, checking: Boolean, on
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             androidx.compose.material3.Icon(AppIcon.of("wifi_off"), contentDescription = null, tint = ChocoColors.danger, modifier = Modifier.size(17.dp))
             Text(
-                "Serveur injoignable pour le moment." + if (hasDownloads) " Tes téléchargements restent disponibles hors ligne." else " Réessaie dans quelques instants.",
+                "Serveur injoignable pour le moment." +
+                    // A wrong URL looks exactly like a server that's down.
+                    " La configuration du serveur peut aussi être en cause : vérifie l'URL et le header de sécurité via l'engrenage en haut à droite." +
+                    if (hasDownloads) " Tes téléchargements restent disponibles hors ligne." else " Sinon, réessaie dans quelques instants.",
                 color = androidx.compose.ui.graphics.Color(0xFFFF9C9C),
                 fontFamily = ChocoFonts.bodyMedium,
                 fontSize = 12.5.sp,
@@ -247,7 +245,10 @@ internal fun LoginField(
             enabled = enabled,
             placeholder = { Text(placeholder, color = androidx.compose.ui.graphics.Color(0x59FFFFFF), fontFamily = ChocoFonts.bodyRegular, fontSize = 14.5.sp) },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = keyboardType,
+                autoCorrectEnabled = keyboardType != KeyboardType.Password,
+            ),
             visualTransformation = visualTransformation,
             textStyle = androidx.compose.ui.text.TextStyle(color = ChocoColors.text, fontFamily = ChocoFonts.bodyRegular, fontSize = 14.5.sp),
             colors = TextFieldDefaults.colors(

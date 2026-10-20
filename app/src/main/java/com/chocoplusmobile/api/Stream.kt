@@ -1,6 +1,5 @@
 package com.chocoplusmobile.api
 
-import com.chocoplusmobile.BuildConfig
 import java.net.URLEncoder
 
 /**
@@ -16,11 +15,11 @@ object Stream {
     private fun encode(s: String) = URLEncoder.encode(s, "UTF-8")
 
     fun movieUrl(movieId: Int, token: String): String =
-        "${BuildConfig.API_URL}/stream/stream-movie/$movieId?token=${encode(token)}"
+        "${ServerConfigHolder.apiUrl}/stream/stream-movie/$movieId?token=${encode(token)}"
 
     fun episodeUrl(seasonId: Int, episodeId: Int, token: String): String =
-        "${BuildConfig.API_URL}/stream/stream-episode/$seasonId/$episodeId?token=${encode(token)}"
+        "${ServerConfigHolder.apiUrl}/stream/stream-episode/$seasonId/$episodeId?token=${encode(token)}"
 
     fun newsUrl(newsId: Int, token: String): String =
-        "${BuildConfig.API_URL}/stream/stream-news/$newsId?token=${encode(token)}"
+        "${ServerConfigHolder.apiUrl}/stream/stream-news/$newsId?token=${encode(token)}"
 }

@@ -5,24 +5,6 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
-// Minimal .env parser (KEY=VALUE per line, `#` comments, optional quotes) —
-// the build fails right away with a clear message if the file or a key is
-// missing, rather than shipping an app pointed at nothing.
-val dotEnv: Map<String, String> = rootProject.file(".env").let { file ->
-    if (!file.exists()) throw GradleException("Fichier .env introuvable à la racine du projet (${file.path})")
-    file.readLines()
-        .map { it.trim() }
-        .filter { it.isNotEmpty() && !it.startsWith("#") && it.contains("=") }
-        .associate { line ->
-            val key = line.substringBefore("=").trim()
-            val value = line.substringAfter("=").trim().removeSurrounding("\"").removeSurrounding("'")
-            key to value
-        }
-}
-
-fun env(key: String): String =
-    dotEnv[key]?.takeIf { it.isNotEmpty() } ?: throw GradleException("Clé $key manquante ou vide dans .env")
-
 android {
     namespace = "com.chocoplusmobile"
     compileSdk = 36
@@ -33,13 +15,8 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
-        // Read from the project root's .env (same keys as the RN app's) and
-        // exposed as BuildConfig fields — keeps the backend URL and the
-        // secret header pair out of the source.
-        buildConfigField("String", "API_URL", "\"${env("API_URL")}\"")
-        buildConfigField("String", "HEADER_NAME_FIELD_SECRET_API", "\"${env("HEADER_NAME_FIELD_SECRET_API")}\"")
-        buildConfigField("String", "HEADER_SECRET_API", "\"${env("HEADER_SECRET_API")}\"")
+        // Backend URL + secret header are entered in the app itself (server
+        // form, see api/ServerConfig.kt) — no more build-time .env.
     }
 
     buildTypes {

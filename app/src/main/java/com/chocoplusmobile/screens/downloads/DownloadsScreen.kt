@@ -72,7 +72,7 @@ private data class DownloadedTitle(val media: Media, val kind: DownloadKind, val
  * Every downloaded movie/episode, laid out exactly like Ma liste (same
  * shared MediaCollection, same format/alignment toggles) — but built
  * entirely from DownloadManager's local index and files, no network at all,
- * so it's also the screen the app opens on when started offline. Tapping a
+ * so it's also the whole app in the offline session. Tapping a
  * title opens a sheet with its video(s): play, progress, cancel, delete.
  */
 @Composable
@@ -163,17 +163,6 @@ fun DownloadsScreen() {
                 "${titles.size} titre${if (titles.size > 1) "s" else ""}" + (if (totalBytes > 0) " · ${formatBytes(totalBytes)}" else "") + " · disponible hors ligne",
                 color = ChocoColors.textMuted, fontFamily = ChocoFonts.bodyRegular, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp),
             )
-
-            if (offline && !offlineSession) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 14.dp).background(Color(0x14FFFFFF), RoundedCornerShape(10.dp)).padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Icon(AppIcon.of("wifi_off"), contentDescription = null, tint = ChocoColors.accent, modifier = Modifier.size(20.dp))
-                    Text("Mode hors ligne — seuls tes téléchargements sont disponibles.", color = ChocoColors.text, fontFamily = ChocoFonts.bodyMedium, fontSize = 12.sp)
-                }
-            }
 
             MediaCollection(
                 items = titles.map { it.media },

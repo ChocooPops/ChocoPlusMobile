@@ -10,6 +10,7 @@ import com.chocoplusmobile.api.AuthTokenHolder
 import com.chocoplusmobile.api.LoginPayload
 import com.chocoplusmobile.api.NetworkModule
 import com.chocoplusmobile.api.PlayerTarget
+import com.chocoplusmobile.api.ServerConfigHolder
 import com.chocoplusmobile.api.User
 import com.chocoplusmobile.api.WatchProgressPayload
 import com.chocoplusmobile.api.WatchProgressStore
@@ -19,7 +20,6 @@ import com.chocoplusmobile.data.ImageQualityLevel
 import com.chocoplusmobile.i18n.AppLocale
 import com.chocoplusmobile.storage.PrefsStorage
 import com.chocoplusmobile.storage.TokenStorage
-import com.chocoplusmobile.storage.UserStorage
 import com.chocoplusmobile.download.DownloadManager
 import com.chocoplusmobile.download.canDownload
 import kotlinx.coroutines.Job
@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -46,7 +45,6 @@ import kotlinx.coroutines.launch
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val tokenStorage = TokenStorage(app)
     private val prefsStorage = PrefsStorage(app)
-    private val userStorage = UserStorage(app)
 
     private val _prefs = MutableStateFlow(PersistedPrefs())
     val prefs: StateFlow<PersistedPrefs> = _prefs.asStateFlow()
@@ -65,14 +63,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val isAuthenticated: StateFlow<Boolean> =
         _user.map { it != null }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    /** True when the app started with the backend unreachable (no
-     * connectivity, timeout, 5xx) and restored the
-     * cached user instead of a server-validated one — only ever for
-     * ADMIN/FAMILY accounts, so they can reach their offline downloads.
-     * Navigation lands on the Downloads screen in that case. */
-    private val _offlineMode = MutableStateFlow(false)
-    val offlineMode: StateFlow<Boolean> = _offlineMode.asStateFlow()
-
     /** Offline session entered by hand from the start screens (Login/
      * splash) — no account, no backend call at all, only the Downloads
      * screen and the player on local files. Takes over the whole UI (see
@@ -80,9 +70,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _offlineSession = MutableStateFlow(false)
     val offlineSession: StateFlow<Boolean> = _offlineSession.asStateFlow()
 
-    /** Either offline flavour — screens use it to skip network calls. */
-    val isOffline: StateFlow<Boolean> =
-        combine(_offlineMode, _offlineSession) { a, b -> a || b }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    /** Screens use it to skip network calls. */
+    val isOffline: StateFlow<Boolean> = offlineSession
 
     fun enterOfflineSession() {
         _offlineSession.value = true
@@ -148,17 +137,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Validates the stored token against the server — at launch, and again
      * by recoverServer once an unreachable server answers again. */
     private suspend fun restoreSession() {
+        // No server yet: the app only shows the server form (see NavGraph).
+        if (!ServerConfigHolder.isConfigured) return
         val token = tokenStorage.read() ?: return
-        // Coming back from the offline start: already inside the app, so no
-        // welcome gate — the user just gets the full app back.
-        val wasOffline = _offlineMode.value
         AuthTokenHolder.token = token
         try {
             val me = NetworkModule.safeCall { NetworkModule.api.getCurrentUser() }
             onUserLoaded(me)
             // Only the silent restore path gates on the welcome screen —
             // an interactive login() below never touches this flag.
-            if (!wasOffline) _welcomeGatePending.value = true
+            _welcomeGatePending.value = true
             refreshMyList()
         } catch (e: Exception) {
             // Only forget the stored token when the server itself looked
@@ -173,24 +161,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             // This session still shows Login either way (we genuinely
             // couldn't confirm who's logged in), but the persisted token
             // now only gets erased when it's actually confirmed invalid.
-            val status = (e as? ApiException)?.status
-            // Server unreachable (no connectivity, timeout, 5xx) with a
-            // cached ADMIN/FAMILY user: open the app anyway, on the
-            // offline Downloads screen — the token is kept, and
-            // watchServerRecovery revalidates it once the server is back.
-            val unavailable = e.isServerUnavailable()
-            val cached = if (unavailable) userStorage.read() else null
-            if (cached != null && cached.role.canDownload()) {
-                _user.value = cached
-                _offlineMode.value = true
-            } else {
-                AuthTokenHolder.token = null
-                if (status == 401) {
-                    tokenStorage.clear()
-                    userStorage.clear()
-                }
-            }
-            if (unavailable) markServerUnavailable()
+            //
+            // Server unreachable (no connectivity, timeout, 5xx, wrong URL):
+            // land on Login — never straight into the offline mode — so the
+            // server form (gear) and the offline button both stay at hand.
+            // The token is kept, and recoverServer revalidates it once the
+            // server answers again.
+            AuthTokenHolder.token = null
+            if ((e as? ApiException)?.status == 401) tokenStorage.clear()
+            if (e.isServerUnavailable()) markServerUnavailable()
         }
     }
 
@@ -213,24 +192,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** A server-confirmed user — cached for offline starts, and lets any
-     * download interrupted by a previous run carry on. */
+    /** A server-confirmed user — lets any download interrupted by a
+     * previous run carry on. */
     private fun onUserLoaded(me: User) {
         _user.value = me
-        _offlineMode.value = false
         _serverUnavailable.value = false
-        viewModelScope.launch { userStorage.write(me) }
         if (me.role.canDownload()) DownloadManager.resumePending()
     }
 
     fun logout() {
         AuthTokenHolder.token = null
         DownloadManager.pauseAll()
-        _offlineMode.value = false
-        viewModelScope.launch {
-            tokenStorage.clear()
-            userStorage.clear()
-        }
+        viewModelScope.launch { tokenStorage.clear() }
         _user.value = null
         _myListIds.value = emptySet()
         _welcomeGatePending.value = false
@@ -265,7 +238,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Probes the backend now (Login on open, its "Réessayer" button):
      * flags it unavailable, or — if it was and answers again — recovers. */
     fun checkServer() {
-        if (_checkingServer.value) return
+        if (_checkingServer.value || !ServerConfigHolder.isConfigured) return
         _checkingServer.value = true
         viewModelScope.launch {
             try {
@@ -295,15 +268,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** The server answers again: clear the flag and, if we're on the
-     * offline start (cached user) or still logged out with a stored token,
-     * revalidate it — restoreSession re-flags the server if that fails.
+    /** The server answers again: clear the flag and, if we're still
+     * logged out with a stored token, revalidate it — restoreSession re-flags the server if that fails.
      * Locked so checkServer and the background watch never revalidate
      * twice at once. */
     private suspend fun recoverServer() = recoveryLock.withLock {
         if (!_serverUnavailable.value) return@withLock
         _serverUnavailable.value = false
-        if (_user.value == null || _offlineMode.value) restoreSession()
+        if (_user.value == null) restoreSession()
     }
 
     fun refreshUser() {

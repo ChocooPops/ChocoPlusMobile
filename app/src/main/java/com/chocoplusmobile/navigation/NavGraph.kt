@@ -48,19 +48,29 @@ import com.chocoplusmobile.screens.profile.SupportScreen
 import com.chocoplusmobile.screens.search.SearchScreen
 import com.chocoplusmobile.api.MediaType
 import com.chocoplusmobile.ui.components.BottomNavBar
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+import com.chocoplusmobile.ui.theme.ChocoFonts
+import com.chocoplusmobile.ui.components.ServerSettingsButton
+import com.chocoplusmobile.ui.components.ServerSetupScreen
+import com.chocoplusmobile.api.ServerConfigHolder
+import androidx.compose.foundation.layout.statusBars
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.download.DownloadManager
 import com.chocoplusmobile.download.DownloadStatus
-import com.chocoplusmobile.ui.components.ButtonVariant
-import com.chocoplusmobile.ui.components.PrimaryButton
 import com.chocoplusmobile.ui.icons.AppIcon
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 
 /**
  * Root navigation — mirrors the RN app's RootNavigator.tsx (top-level: auth
@@ -81,55 +91,70 @@ fun ChocoNavGraph(appViewModel: AppViewModel) {
     CompositionLocalProvider(LocalAppViewModel provides appViewModel) {
         when {
             offlineSession -> OfflineGraph()
-            !authChecked -> SplashScreen()
-            isAuthenticated && welcomeGatePending -> WelcomeBackScreen()
+            // Loaded once at startup, and saving a new one restarts the app —
+            // so a plain read (not observed state) is enough here.
+            // (the setup screen is the form itself — no gear needed there)
+            !ServerConfigHolder.isConfigured -> LaunchScreenChrome(serverSettings = false) { ServerSetupScreen() }
+            !authChecked -> LaunchScreenChrome { SplashScreen() }
+            isAuthenticated && welcomeGatePending -> LaunchScreenChrome { WelcomeBackScreen() }
             isAuthenticated -> MainGraph()
-            else -> AuthGraph()
+            else -> LaunchScreenChrome { AuthGraph() }
         }
     }
 }
 
-/** The auth check can hang for the full network timeout on a bad
- * connection — after a few seconds, offer the offline mode right here
- * (only when there's something downloaded to watch). */
+/** Every launch screen (server setup, splash, welcome back, login/signup)
+ * gets the same two corner buttons: offline mode top-left — reachable
+ * without an account, a server, or waiting for the auth check — and the
+ * server form's gear top-right. */
+@Composable
+private fun LaunchScreenChrome(serverSettings: Boolean = true, content: @Composable () -> Unit) {
+    val appViewModel = LocalAppViewModel.current
+    Box(modifier = Modifier.fillMaxSize()) {
+        content()
+        val corner = Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 8.dp)
+        OfflineModeChip(
+            onClick = appViewModel::enterOfflineSession,
+            modifier = Modifier.align(Alignment.TopStart).then(corner).padding(start = 12.dp),
+        )
+        if (serverSettings) {
+            ServerSettingsButton(modifier = Modifier.align(Alignment.TopEnd).then(corner).padding(end = 12.dp))
+        }
+    }
+}
+
+/** Always shown, even with nothing downloaded yet — the Downloads screen's
+ * own empty state then says so, rather than the entry point vanishing. */
+@Composable
+private fun OfflineModeChip(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .height(40.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(ChocoColors.card)
+            .clickable(onClick = onClick)
+            .padding(start = 12.dp, end = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+    ) {
+        Icon(AppIcon.of("download_for_offline"), contentDescription = null, tint = ChocoColors.text, modifier = Modifier.size(20.dp))
+        Text("Hors ligne", color = ChocoColors.text, fontFamily = ChocoFonts.bodySemiBold, fontSize = 13.sp)
+    }
+}
+
 @Composable
 private fun SplashScreen() {
-    val appViewModel = LocalAppViewModel.current
-    val hasDownloads = rememberHasOfflineContent()
-    var showOffline by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay(3000)
-        showOffline = true
-    }
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator(color = ChocoColors.accent)
-        if (showOffline && hasDownloads) {
-            OfflineModeButton(
-                onClick = appViewModel::enterOfflineSession,
-                modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars).padding(24.dp).fillMaxWidth(),
-            )
-        }
     }
 }
 
-/** True when at least one video is fully downloaded — the offline entry
- * points are hidden otherwise (there'd be nothing to show). */
+/** True when at least one video is fully downloaded — Login's "server
+ * unreachable" banner only offers the downloads then. */
 @Composable
 fun rememberHasOfflineContent(): Boolean {
     val entries by DownloadManager.entries.collectAsState()
     return entries.values.any { it.status == DownloadStatus.COMPLETED }
-}
-
-@Composable
-fun OfflineModeButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    PrimaryButton(
-        label = "Mode hors ligne",
-        icon = AppIcon.of("download_for_offline"),
-        variant = ButtonVariant.OUTLINE,
-        onClick = onClick,
-        height = 48.dp,
-        modifier = modifier,
-    )
 }
 
 /**
@@ -222,14 +247,10 @@ private fun MainGraph() {
         // prefs are confirmed hydrated, with "home" popped off the back
         // stack so it never lingers behind it (no flash, no extra back-tap).
         var startPageApplied by remember { mutableStateOf(false) }
-        // Started offline (see AppViewModel.offlineMode): every other page
-        // would just show network errors, so the downloads are the start
-        // page regardless of the setting.
-        val offlineMode by appViewModel.offlineMode.collectAsState()
         LaunchedEffect(prefsHydrated) {
             if (prefsHydrated && !startPageApplied) {
                 startPageApplied = true
-                val route = if (offlineMode) "downloads" else startPageRoute(prefs.settings.startPage)
+                val route = startPageRoute(prefs.settings.startPage)
                 if (route != "home") {
                     navController.navigate(route) { popUpTo("home") { inclusive = true } }
                 }
