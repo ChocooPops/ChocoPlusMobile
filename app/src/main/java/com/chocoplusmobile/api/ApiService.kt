@@ -170,6 +170,11 @@ interface ApiService {
     @POST("auth/register")
     suspend fun register(@Body payload: RegisterPayload): ReturnMessage
 
+    /** Checks the current token against the user's role server-side, and
+     * returns a fresh token when it no longer matches. */
+    @GET("auth/synch-role-token")
+    suspend fun syncRoleToken(): SyncRoleTokenResponse
+
     // ── user.ts ──
     @GET("user/current-user")
     suspend fun getCurrentUser(): User

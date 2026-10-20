@@ -22,6 +22,7 @@ import com.chocoplusmobile.storage.PrefsStorage
 import com.chocoplusmobile.storage.TokenStorage
 import com.chocoplusmobile.download.DownloadManager
 import com.chocoplusmobile.download.canDownload
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -107,6 +108,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dismissWelcomeGate() {
         _welcomeGatePending.value = false
+    }
+
+    /** Run when leaving the welcome gate: the stored token may predate a
+     * role change (promoted/demoted since it was issued), and the server
+     * hands back a fresh one in that case — it replaces the old one in
+     * memory and in storage. Best-effort otherwise: a 401 already logs out
+     * through the global interceptor, and any other failure keeps the
+     * current token rather than trapping the user on the welcome screen. */
+    suspend fun syncRoleToken() {
+        try {
+            val fresh = NetworkModule.safeCall { NetworkModule.api.syncRoleToken() }.accessToken
+            if (fresh.isNullOrBlank() || fresh == AuthTokenHolder.token) return
+            AuthTokenHolder.token = fresh
+            tokenStorage.write(fresh)
+            // A new token means a new role — reload the user so everything
+            // gated on it (downloads, administration) follows.
+            onUserLoaded(NetworkModule.safeCall { NetworkModule.api.getCurrentUser() })
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // see above
+        }
     }
 
     private val _myListIds = MutableStateFlow<Set<Int>>(emptySet())

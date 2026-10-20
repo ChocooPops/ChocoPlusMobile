@@ -41,6 +41,7 @@ import com.chocoplusmobile.ui.components.ButtonVariant
 import com.chocoplusmobile.ui.components.PrimaryButton
 import com.chocoplusmobile.ui.theme.ChocoColors
 import com.chocoplusmobile.ui.theme.ChocoFonts
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.chocoplusmobile.i18n.Tr
@@ -72,9 +73,13 @@ fun WelcomeBackScreen() {
             scale.animateTo(1.1f, animationSpec = tween(100))
             scale.animateTo(1f, animationSpec = spring(dampingRatio = 0.35f, stiffness = 260f))
             loading = true
-            // Held for a beat so the spinner is actually visible instead of
-            // flashing for a single frame.
-            delay(500)
+            // Token/role check before entering, held for at least a beat so
+            // the spinner is actually visible instead of flashing for a
+            // single frame.
+            coroutineScope {
+                launch { delay(500) }
+                appViewModel.syncRoleToken()
+            }
             appViewModel.dismissWelcomeGate()
         }
     }

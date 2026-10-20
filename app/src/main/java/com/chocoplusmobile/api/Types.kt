@@ -248,6 +248,13 @@ data class TokenModel(
     @SerialName("access_token") val accessToken: String,
 )
 
+/** GET auth/synch-role-token — same shape as TokenModel, but the token is
+ * optional so an answer without one (role already matching) still parses. */
+@Serializable
+data class SyncRoleTokenResponse(
+    @SerialName("access_token") val accessToken: String? = null,
+)
+
 // ── /stat-user ──────────────────────────────────────────────────────────
 
 @Serializable
